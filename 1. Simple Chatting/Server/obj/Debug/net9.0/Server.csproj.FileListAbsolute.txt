@@ -12,3 +12,4 @@ C:\Users\ROKman\Documents\ChattingApp\1. Simple Chatting\Server\obj\Debug\net9.0
 C:\Users\ROKman\Documents\ChattingApp\1. Simple Chatting\Server\obj\Debug\net9.0\Server.pdb
 C:\Users\ROKman\Documents\ChattingApp\1. Simple Chatting\Server\obj\Debug\net9.0\Server.genruntimeconfig.cache
 C:\Users\ROKman\Documents\ChattingApp\1. Simple Chatting\Server\obj\Debug\net9.0\ref\Server.dll
+C:\Users\ROKman\Documents\ChattingApp\1. Simple Chatting\Server\obj\Debug\net9.0\Server.sourcelink.json

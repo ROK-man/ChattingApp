@@ -18,7 +18,7 @@ namespace Server
             while(true)
             {
                 input = Console.ReadLine().ToLower();
-                if(input == "connections")
+                if(input == "status")
                 {
                     Console.WriteLine($"Current args pool size: {server.m_freeArgsPool.Count()}");
                     Console.WriteLine($"Current connections: {server.CurrentConnections}");

@@ -8,6 +8,28 @@ using System.Threading.Tasks;
 
 namespace Server
 {
+    class Token
+    {
+        public Socket ClientSocket;
+        public byte[] Buffer;
+        public int m_index;
+        public int m_length;
+
+        public Token()
+        {
+            m_index = 0;
+            Buffer = new byte[4096];
+        }
+
+        public void TransferData(byte[] buffer, int offset, int length)
+        {
+            for(int i=0; i<length; i++)
+            {
+                Buffer[m_index++] = buffer[i + offset];
+            }
+            m_length += length;
+        }
+    }
     internal class Server
     {
         Socket m_listeningSocket;
@@ -35,11 +57,15 @@ namespace Server
         {
             m_bufferManager.InitBuffer();
             SocketAsyncEventArgs eventArg;
+            Token token;
 
             for (int i = 0; i < 2 * m_maxConnections; i++)
             {
                 eventArg = new SocketAsyncEventArgs();
                 eventArg.Completed += new EventHandler<SocketAsyncEventArgs>(IO_Completed);
+
+                token = new Token();
+                eventArg.UserToken = token;
 
                 m_bufferManager.SetBuffer(eventArg);
                 m_freeArgsPool.Push(eventArg);
@@ -92,7 +118,7 @@ namespace Server
             if(m_freeArgsPool.Count > 0)
             { 
                 SocketAsyncEventArgs receiveEventArg = m_freeArgsPool.Pop();
-                receiveEventArg.UserToken = e.AcceptSocket;
+                ((Token)receiveEventArg.UserToken).ClientSocket = e.AcceptSocket;
                 lock(m_lock)
                 {
                     m_connectedSockets.Add(e.AcceptSocket);
@@ -128,12 +154,12 @@ namespace Server
         {
             if (e.SocketError == SocketError.Success && e.BytesTransferred > 0)
             {
-                String message = System.Text.Encoding.UTF8.GetString(e.Buffer, e.Offset, e.BytesTransferred);
-                Console.WriteLine($"Received message from {((Socket)e.UserToken).RemoteEndPoint}: {message}");
+                Token token = (Token)e.UserToken; 
+                token.TransferData(e.Buffer, e.Offset, e.BytesTransferred);
 
-                BroadCastMessage(message);
+                TryDataProcess(token);
 
-                if (!((Socket)e.UserToken).ReceiveAsync(e))
+                if (!((Token)e.UserToken).ClientSocket.ReceiveAsync(e))
                 {
                     ProcessReceive(e);
                 }
@@ -144,10 +170,20 @@ namespace Server
             }
         }
 
+        void TryDataProcess(Token token)
+        {
+            String message = System.Text.Encoding.UTF8.GetString(token.Buffer, 0, token.m_length);
+            Console.WriteLine($"Received message: {message}");
+
+            BroadCastMessage(message);
+            token.m_length = 0;
+            token.m_index = 0;
+        }
+
         void ProcessSend(SocketAsyncEventArgs e)
         {
             m_freeArgsPool.Push(e);
-            Console.WriteLine($"To {((Socket)e.UserToken).RemoteEndPoint}: Send completed.");
+            Console.WriteLine($"To {((Token)e.UserToken).ClientSocket.RemoteEndPoint}: Send completed.");
             m_bufferManager.SetBuffer(e);
         }
 
@@ -167,7 +203,7 @@ namespace Server
                     m_bufferManager.FreeBuffer(sendEventArg);
                     sendEventArg.SetBuffer(buffer, 0, buffer.Length);
 
-                    sendEventArg.UserToken = socket;
+                    ((Token)sendEventArg.UserToken).ClientSocket = socket;
                     if (!socket.SendAsync(sendEventArg))
                     {
                         ProcessSend(sendEventArg);
@@ -178,8 +214,8 @@ namespace Server
 
         void CloseClientSocket(SocketAsyncEventArgs e)
         {
-            Console.WriteLine($"Closing connection: {((Socket)e.UserToken).RemoteEndPoint}");
-            Socket socket = (Socket)e.UserToken;
+            Console.WriteLine($"Closing connection: {((Token)e.UserToken).ClientSocket.RemoteEndPoint}");
+            Socket socket = ((Token)e.UserToken).ClientSocket;
 
             try
             {
