@@ -138,8 +138,6 @@ namespace Server
                     Console.WriteLine($"Received message: {token.m_payload}");
 
                     BroadCastMessage(token);
-                    token.m_length = 0;
-                    token.m_index = 0;
                 }
 
 

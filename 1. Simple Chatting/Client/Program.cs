@@ -61,6 +61,10 @@ namespace Client
             else
             {
                 Console.WriteLine("Error receiving data.");
+                Socket socket = (Socket)e.UserToken;
+                socket.Shutdown(SocketShutdown.Both);   
+                socket.Close();
+                return;
             }
 
             if (!((Socket)e.UserToken).ReceiveAsync(e))
@@ -73,12 +77,13 @@ namespace Client
         {
             string message = "";
             message += $"time: {DateTime.Now.Year} {DateTime.Now.Month} {DateTime.Now.Day} " +
-                $"{DateTime.Now.Hour} {DateTime.Now.Minute} {DateTime.Now.Second}\r\n";
-            message += $"length: {Encoding.UTF8.GetByteCount(payload)}\r\n";
+                $"{DateTime.Now.Hour} {DateTime.Now.Minute} {DateTime.Now.Second} {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}\r\n";
             message += $"name: {name}\r\n";
+            message += $"length: {Encoding.UTF8.GetByteCount(payload)}\r\n";
 
             message += "\r\n";
             message += payload;
+            message += "\r\n";
             return message;
         }
     }
