@@ -8,28 +8,6 @@ using System.Threading.Tasks;
 
 namespace Server
 {
-    class Token
-    {
-        public Socket ClientSocket;
-        public byte[] Buffer;
-        public int m_index;
-        public int m_length;
-
-        public Token()
-        {
-            m_index = 0;
-            Buffer = new byte[4096];
-        }
-
-        public void TransferData(byte[] buffer, int offset, int length)
-        {
-            for(int i=0; i<length; i++)
-            {
-                Buffer[m_index++] = buffer[i + offset];
-            }
-            m_length += length;
-        }
-    }
     internal class Server
     {
         Socket m_listeningSocket;
@@ -155,9 +133,15 @@ namespace Server
             if (e.SocketError == SocketError.Success && e.BytesTransferred > 0)
             {
                 Token token = (Token)e.UserToken; 
-                token.TransferData(e.Buffer, e.Offset, e.BytesTransferred);
+                if(token.TransferData(e.Buffer, e.Offset, e.BytesTransferred))
+                {
+                    Console.WriteLine($"Received message: {token.m_payload}");
 
-                TryDataProcess(token);
+                    BroadCastMessage(token);
+                    token.m_length = 0;
+                    token.m_index = 0;
+                }
+
 
                 if (!((Token)e.UserToken).ClientSocket.ReceiveAsync(e))
                 {
@@ -170,16 +154,6 @@ namespace Server
             }
         }
 
-        void TryDataProcess(Token token)
-        {
-            String message = System.Text.Encoding.UTF8.GetString(token.Buffer, 0, token.m_length);
-            Console.WriteLine($"Received message: {message}");
-
-            BroadCastMessage(message);
-            token.m_length = 0;
-            token.m_index = 0;
-        }
-
         void ProcessSend(SocketAsyncEventArgs e)
         {
             m_freeArgsPool.Push(e);
@@ -187,8 +161,9 @@ namespace Server
             m_bufferManager.SetBuffer(e);
         }
 
-        void BroadCastMessage(string message)
+        void BroadCastMessage(Token token)
         {
+            string message = token.MakeMessage();
             if(string.IsNullOrEmpty(message))
             {
                 return;
@@ -230,56 +205,6 @@ namespace Server
             }
             m_currentConnections--;
             m_freeArgsPool.Push(e);
-        }
-    }
-
-    internal class BufferManager
-    {
-        int m_numBytes;
-        byte[] m_buffer;
-        Stack<int> m_freeIndexPool;
-        int m_currentIndex;
-        int m_bufferSize;
-
-        public BufferManager(int numBytes, int bufferSize)
-        {
-            m_numBytes = numBytes;
-            m_bufferSize = bufferSize;
-            m_freeIndexPool = new Stack<int>();
-            m_currentIndex = 0;
-        }
-
-        public void InitBuffer()
-        {
-            m_buffer = new byte[m_numBytes];
-        }
-
-        public bool SetBuffer(SocketAsyncEventArgs args)
-        {
-            if (m_freeIndexPool.Count > 0)
-            {
-                args.SetBuffer(m_buffer, m_freeIndexPool.Pop(), m_bufferSize);
-            }
-            else if (m_currentIndex <= m_numBytes - m_bufferSize)
-            {
-                if ((m_numBytes - m_bufferSize) < m_currentIndex)
-                {
-                    return false;
-                }
-                args.SetBuffer(m_buffer, m_currentIndex, m_bufferSize);
-                m_currentIndex += m_bufferSize;
-            }
-            else
-            {
-                Console.WriteLine("Buffer assign Error!!");
-            }
-             return true;
-        }
-
-        public void FreeBuffer(SocketAsyncEventArgs args)
-        {
-            m_freeIndexPool.Push(args.Offset);
-            args.SetBuffer(null, 0, 0);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Text;
 namespace Client
 {
     internal class Program
@@ -8,6 +9,10 @@ namespace Client
         {
             Console.InputEncoding = System.Text.Encoding.UTF8;
             Console.OutputEncoding = System.Text.Encoding.UTF8;
+
+            Console.WriteLine("Input your m_name:");
+            var name = Console.ReadLine() ?? "default name";
+
 
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             socket.Connect(IPAddress.Loopback, 5000);
@@ -23,6 +28,8 @@ namespace Client
                 ProcessReceive(receiveArg);
             }
 
+            byte[] buffer = new byte[1024];
+
             while (true)
             {
                 string? message = Console.ReadLine();
@@ -30,11 +37,12 @@ namespace Client
                 {
                     continue;
                 }
-                byte[] buffer = new byte[1024];
+
+                message = PackageMessage(name, message);
 
                 System.Text.Encoding.UTF8.GetBytes(message, 0, message.Length, buffer, 0);
 
-                socket.Send(buffer, 0, buffer.Length, SocketFlags.None);
+                socket.Send(buffer, 0, message.Length, SocketFlags.None);
             }
         }
 
@@ -48,7 +56,7 @@ namespace Client
             if (e.SocketError == SocketError.Success && e.BytesTransferred > 0)
             {
                 string message = System.Text.Encoding.UTF8.GetString(e.Buffer, e.Offset, e.BytesTransferred);
-                Console.WriteLine($"Received message: {message}");
+                Console.WriteLine($"{message}");
             }
             else
             {
@@ -59,6 +67,19 @@ namespace Client
             {
                 ProcessReceive(e);
             }
+        }
+
+        static string PackageMessage(string name, string payload)
+        {
+            string message = "";
+            message += $"time: {DateTime.Now.Year} {DateTime.Now.Month} {DateTime.Now.Day} " +
+                $"{DateTime.Now.Hour} {DateTime.Now.Minute} {DateTime.Now.Second}\r\n";
+            message += $"length: {Encoding.UTF8.GetByteCount(payload)}\r\n";
+            message += $"name: {name}\r\n";
+
+            message += "\r\n";
+            message += payload;
+            return message;
         }
     }
 }
