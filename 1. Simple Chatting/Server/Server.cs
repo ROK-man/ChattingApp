@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
+﻿using System.Net;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Server
 {
@@ -15,9 +10,8 @@ namespace Server
         List<Socket> m_connectedSockets;
         object m_lock;
         int m_maxConnections;
-        private int m_currentConnections;
-        public int CurrentConnections => m_currentConnections; 
-        BufferManager m_bufferManager;
+        int m_currentConnections;
+        SocketBufferManager m_bufferManager;
         int m_bufferSize;
 
         public Server(int maxConnections)
@@ -25,7 +19,7 @@ namespace Server
             m_bufferSize = 1024;
             m_maxConnections = maxConnections;
             m_currentConnections = 0;
-            m_bufferManager = new BufferManager(2 * m_maxConnections * m_bufferSize, m_bufferSize);
+            m_bufferManager = new SocketBufferManager(2 * m_maxConnections * m_bufferSize, m_bufferSize);
             m_freeArgsPool = new Stack<SocketAsyncEventArgs>(2 * m_maxConnections);
             m_connectedSockets = new();
             m_lock = new object();
@@ -40,12 +34,14 @@ namespace Server
             for (int i = 0; i < 2 * m_maxConnections; i++)
             {
                 eventArg = new SocketAsyncEventArgs();
+
                 eventArg.Completed += new EventHandler<SocketAsyncEventArgs>(IO_Completed);
 
                 token = new Token();
                 eventArg.UserToken = token;
 
                 m_bufferManager.SetBuffer(eventArg);
+
                 m_freeArgsPool.Push(eventArg);
             }
         }
@@ -68,6 +64,7 @@ namespace Server
         void StartAccept(SocketAsyncEventArgs acceptArg)
         {
             acceptArg.AcceptSocket = null;
+
             if (!m_listeningSocket.AcceptAsync(acceptArg))
             {
                 AcceptEventArg_Completed(m_listeningSocket, acceptArg);
@@ -78,7 +75,7 @@ namespace Server
         {
             if (m_currentConnections >= m_maxConnections)
             {
-                Console.WriteLine("Max connections reached. Rejecting new connection.");
+                Console.WriteLine("Max connections reached.");
                 e.AcceptSocket.Close();
             }
             else
@@ -136,11 +133,10 @@ namespace Server
                 Token token = (Token)e.UserToken; 
                 if(token.TransferData(e.Buffer, e.Offset, e.BytesTransferred))
                 {
-                    Console.WriteLine($"Received message: {token.m_payload}");
+                    Console.WriteLine($"[{token.m_minute:00}:{token.m_second:00}] {token.m_name}: {token.m_payload}");
 
                     BroadCastMessage(token);
                 }
-
 
                 if (!((Token)e.UserToken).ClientSocket.ReceiveAsync(e))
                 {
@@ -156,7 +152,6 @@ namespace Server
         void ProcessSend(SocketAsyncEventArgs e)
         {
             m_freeArgsPool.Push(e);
-            Console.WriteLine($"To {((Token)e.UserToken).ClientSocket.RemoteEndPoint}: Send completed.");
             m_bufferManager.SetBuffer(e);
         }
 
@@ -193,7 +188,7 @@ namespace Server
 
             try
             {
-                socket.Shutdown(SocketShutdown.Send);
+                socket.Shutdown(SocketShutdown.Both);
             }
 
             catch (Exception) { }

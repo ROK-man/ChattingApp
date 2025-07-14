@@ -7,8 +7,16 @@
       "RelativeMoniker": "D:0:0:{2102C7F6-1DBA-4E07-9AED-AE5D079B7E8E}|Server\\Server.csproj|solutionrelative:server\\token.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{2102C7F6-1DBA-4E07-9AED-AE5D079B7E8E}|Server\\Server.csproj|c:\\users\\rokman\\documents\\chattingapp\\1. simple chatting\\server\\socketbuffermanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2102C7F6-1DBA-4E07-9AED-AE5D079B7E8E}|Server\\Server.csproj|solutionrelative:server\\socketbuffermanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{2102C7F6-1DBA-4E07-9AED-AE5D079B7E8E}|Server\\Server.csproj|c:\\users\\rokman\\documents\\chattingapp\\1. simple chatting\\server\\server.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{2102C7F6-1DBA-4E07-9AED-AE5D079B7E8E}|Server\\Server.csproj|solutionrelative:server\\server.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2102C7F6-1DBA-4E07-9AED-AE5D079B7E8E}|Server\\Server.csproj|c:\\users\\rokman\\documents\\chattingapp\\1. simple chatting\\server\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2102C7F6-1DBA-4E07-9AED-AE5D079B7E8E}|Server\\Server.csproj|solutionrelative:server\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{CFAB4D2C-5ACB-46F8-A612-4C43CC365AB0}|Client\\Client.csproj|c:\\users\\rokman\\documents\\chattingapp\\1. simple chatting\\client\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -22,17 +30,43 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 3,
           "Children": [
             {
               "$type": "Document",
               "DocumentIndex": 1,
+              "Title": "SocketBufferManager.cs",
+              "DocumentMoniker": "C:\\Users\\ROKman\\Documents\\ChattingApp\\1. Simple Chatting\\Server\\SocketBufferManager.cs",
+              "RelativeDocumentMoniker": "Server\\SocketBufferManager.cs",
+              "ToolTip": "C:\\Users\\ROKman\\Documents\\ChattingApp\\1. Simple Chatting\\Server\\SocketBufferManager.cs",
+              "RelativeToolTip": "Server\\SocketBufferManager.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-14T01:55:28.284Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\ROKman\\Documents\\ChattingApp\\1. Simple Chatting\\Server\\Program.cs",
+              "RelativeDocumentMoniker": "Server\\Program.cs",
+              "ToolTip": "C:\\Users\\ROKman\\Documents\\ChattingApp\\1. Simple Chatting\\Server\\Program.cs",
+              "RelativeToolTip": "Server\\Program.cs",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAAABYAAAA1AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-07-14T01:53:31.122Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
               "Title": "Server.cs",
               "DocumentMoniker": "C:\\Users\\ROKman\\Documents\\ChattingApp\\1. Simple Chatting\\Server\\Server.cs",
               "RelativeDocumentMoniker": "Server\\Server.cs",
               "ToolTip": "C:\\Users\\ROKman\\Documents\\ChattingApp\\1. Simple Chatting\\Server\\Server.cs",
               "RelativeToolTip": "Server\\Server.cs",
-              "ViewState": "AgIAAFYAAAAAAAAAAAAswGEAAABMAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAEAAAAZAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-07-14T01:28:40.935Z",
               "EditorCaption": ""
@@ -45,14 +79,14 @@
               "RelativeDocumentMoniker": "Server\\Token.cs",
               "ToolTip": "C:\\Users\\ROKman\\Documents\\ChattingApp\\1. Simple Chatting\\Server\\Token.cs",
               "RelativeToolTip": "Server\\Token.cs",
-              "ViewState": "AgIAACcAAAAAAAAAAAA1wC0AAAAvAAAAAAAAAA==",
+              "ViewState": "AgIAAPIAAAAAAAAAAAAswAQAAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-07-14T01:26:03.416Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 4,
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\Users\\ROKman\\Documents\\ChattingApp\\1. Simple Chatting\\Client\\Program.cs",
               "RelativeDocumentMoniker": "Client\\Program.cs",
@@ -60,8 +94,7 @@
               "RelativeToolTip": "Client\\Program.cs",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAF4AAAAfAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-07-14T01:17:29.195Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-07-14T01:17:29.195Z"
             }
           ]
         }
