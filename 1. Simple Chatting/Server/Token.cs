@@ -53,7 +53,6 @@ namespace Server
             {
                 for (int i = 0; i < length; i++)
                 {
-                    //Console.WriteLine($"Debug, {m_index}");
                     Buffer[m_index++] = buffer[i + offset];
                     m_index %= Buffer.Length;
                 }
@@ -120,9 +119,6 @@ namespace Server
                         if (Buffer[Buffer.Length - 1] == '\r' && Buffer[0] == '\n')
                         {
                             string line = Encoding.UTF8.GetString(Buffer, m_offset, Buffer.Length - m_offset);
-                            Console.ForegroundColor = ConsoleColor.Green;
-                            Console.WriteLine($"Test1: {line}");
-                            Console.ResetColor();
                             m_offset = 1;
                             ProcessLine(line);
 
@@ -132,7 +128,6 @@ namespace Server
                         {
 
                             string line = Encoding.UTF8.GetString(Buffer, m_offset, Buffer.Length - m_offset);
-                            Console.WriteLine($"Test2: {line}");
                             m_offset = 2;
                             if (ProcessLine(line))
                             {
@@ -216,9 +211,6 @@ namespace Server
         bool ProcessLine(string line)
         {
             line = line.Trim();
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"ProcessLine: {line}");
-            Console.ResetColor();
 
             // crlf crlf
             if (line.Length == 0)
@@ -254,7 +246,7 @@ namespace Server
         {
             Console.WriteLine($"Delay: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - m_unixTime}ms");
             StringBuilder sb = new StringBuilder();
-            sb.Append($"[{m_hour}:{m_minute}:{m_second}] ");
+            sb.Append($"[{m_hour:00}:{m_minute:00}:{m_second:00}] ");
             sb.Append($"{m_name}: ");
             sb.Append(m_payload);
 

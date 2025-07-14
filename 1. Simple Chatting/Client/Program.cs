@@ -37,12 +37,22 @@ namespace Client
                 {
                     continue;
                 }
+                if (message == "test")
+                {
+                    for (int i = 0; i < 100; i++)
+                    {
+                        message = Test();
+                        System.Text.Encoding.UTF8.GetBytes(message, 0, message.Length, buffer, 0);
+                        socket.Send(buffer, 0, message.Length, SocketFlags.None);
+                    }
+                    continue;
+                }
 
                 message = PackageMessage(name, message);
 
                 System.Text.Encoding.UTF8.GetBytes(message, 0, message.Length, buffer, 0);
 
-                socket.Send(buffer, 0, message.Length, SocketFlags.None);
+                socket.Send(buffer, 0, System.Text.Encoding.UTF8.GetByteCount(message), SocketFlags.None);
             }
         }
 
@@ -62,7 +72,7 @@ namespace Client
             {
                 Console.WriteLine("Error receiving data.");
                 Socket socket = (Socket)e.UserToken;
-                socket.Shutdown(SocketShutdown.Both);   
+                socket.Shutdown(SocketShutdown.Both);
                 socket.Close();
                 return;
             }
@@ -84,6 +94,23 @@ namespace Client
             message += "\r\n";
             message += payload;
             message += "\r\n";
+            return message;
+        }
+
+        static string Test()
+        {
+            Console.WriteLine("Test");
+            string message = "";
+
+            message += "time: 2025 1 1 12 20 30 1704091234567\r\n";
+            message += "name: test\r\n";
+            message += "length: 5\r\n";
+
+            message += "\r\n";
+
+            message += "Hello";
+            message += "\r\n";
+
             return message;
         }
     }

@@ -96,6 +96,7 @@ namespace Server
             if(m_freeArgsPool.Count > 0)
             { 
                 SocketAsyncEventArgs receiveEventArg = m_freeArgsPool.Pop();
+
                 ((Token)receiveEventArg.UserToken).ClientSocket = e.AcceptSocket;
                 lock(m_lock)
                 {
