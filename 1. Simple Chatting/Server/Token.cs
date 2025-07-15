@@ -1,6 +1,10 @@
 ﻿using System.Net.Sockets;
 using System.Text;
 
+// 현 문제점
+// 한 번에 하나의 메시지만 처리됨. (여러개 메시지 쌓이면 꼬임)
+// 큐에 메시지 쌓아서 넣을 필요가 있음
+
 namespace Server
 {
     enum TokenState
@@ -16,6 +20,9 @@ namespace Server
         public byte[] Buffer;
         public int m_index;
         public int m_offset;
+        public int m_currentDatalength;
+
+        public int m_MaxLength;
 
         // header
         public int m_year;
@@ -37,30 +44,26 @@ namespace Server
         {
             m_index = 0;
             // one total message shoud less than 4KB;
-            Buffer = new byte[100];
+            m_MaxLength = 100;
+            Buffer = new byte[m_MaxLength];
             m_offset = 0;
             m_state = TokenState.HeaderParsing;
         }
 
         public bool TransferData(byte[] buffer, int offset, int length)
         {
-            Console.WriteLine($"TransferData: {length} bytes");
-            if (length > Buffer.Length - m_index)
+            if (length + m_currentDatalength > m_MaxLength)
             {
-                for (int i = 0; i < length; i++)
-                {
-                    Buffer[m_index++] = buffer[i + offset];
-                    m_index %= Buffer.Length;
-                }
+                Console.WriteLine($"Error: Data length exceeds maximum limit. Current length: {m_currentDatalength}, Attempted length: {length}");
+                return false;
             }
-            else
+
+            for (int i = 0; i < length; i++)
             {
-                for (int i = 0; i < length; i++)
-                {
-                    Buffer[m_index++] = buffer[i + offset];
-                }
-                m_index %= Buffer.Length;
+                Buffer[m_index++] = buffer[i + offset];
+                m_index %= m_MaxLength;
             }
+            m_currentDatalength += length;
 
             return ParseData();
         }
@@ -68,151 +71,64 @@ namespace Server
         // return true when payload parsed
         bool ParseData()
         {
-            switch (m_state)
+            while (true)
             {
-                case TokenState.HeaderParsing:
-                    if (m_offset < m_index)
-                    {
-                        for (int i = m_offset; i < m_index - 1; i++)
-                        {
-                            if (Buffer[i] == '\r' && Buffer[i + 1] == '\n')
-                            {
-                                i += 1;
-                                string line = Encoding.UTF8.GetString(Buffer, m_offset, i - m_offset);
-                                m_offset = i + 1;
-                                // crlf crlf
-                                if (ProcessLine(line))
-                                {
-                                    return ParseData();
-                                }
-                            }
-                        }
-                    }
-                    else
-                    {
-                        for (int i = m_offset; i < Buffer.Length - 1; i++)
-                        {
-                            if (Buffer[i] == '\r' && Buffer[i + 1] == '\n')
-                            {
-                                i += 1;
-                                string line = Encoding.UTF8.GetString(Buffer, m_offset, i - m_offset);
-                                m_offset = i + 1;
+                string line = getLine();
+                if (line.Length == 0)
+                {
+                    return false;
+                }
+                if (ProcessLine(line))
+                {
+                    return true;
+                }
+            }
+        }
 
-                                m_offset %= Buffer.Length;
-                                // crlf crlf
-                                if (ProcessLine(line))
-                                {
-                                    return ParseData();
-                                }
-                            }
-                        }
-                        if (m_offset == 0)
-                        {
-                            return ParseData();
-                        }
-
-                        // \r\n 끼어있거나, 0에 있거나, 데이터 잘려있는 상황
-                        if (Buffer[Buffer.Length - 1] == '\r' && Buffer[0] == '\n')
-                        {
-                            string line = Encoding.UTF8.GetString(Buffer, m_offset, Buffer.Length - m_offset);
-                            m_offset = 1;
-                            ProcessLine(line);
-
-                            return ParseData();
-                        }
-                        else if (Buffer[0] == 'r' && Buffer[1] == '\n')
-                        {
-
-                            string line = Encoding.UTF8.GetString(Buffer, m_offset, Buffer.Length - m_offset);
-                            m_offset = 2;
-                            if (ProcessLine(line))
-                            {
-                                return ParseData();
-                            }
-                        }
-                        else
-                        {
-                            byte[] temp = new byte[4096];
-                            int tempIndex = 0;
-                            for (int i = m_offset; i < Buffer.Length; i++)
-                            {
-                                temp[tempIndex++] = Buffer[i];
-                            }
-                            for (int i = 0; i < m_index - 1; i++)
-                            {
-                                if (Buffer[i] == '\r' && Buffer[i + 1] == '\n')
-                                {
-                                    string line = Encoding.UTF8.GetString(temp, 0, tempIndex);
-                                    Console.WriteLine($"Test3: {line}");
-
-                                    m_offset = i + 2;
-                                    ProcessLine(line);
-
-                                    return ParseData();
-
-                                }
-                                else
-                                {
-                                    temp[tempIndex++] = Buffer[i];
-                                }
-                            }
-                        }
-                    }
+        string getLine()
+        {
+            string line = "";
+            byte[] temp = new byte[m_MaxLength];
+            int tempIndex = 0;
+            for (int i = m_offset; i != m_index; i = (i + 1) % m_MaxLength)
+            {
+                temp[tempIndex++] = Buffer[i];
+                if (Buffer[i] == '\r' && Buffer[(i + 1) % m_MaxLength] == '\n')
+                {
+                    line = Encoding.UTF8.GetString(temp, 0, tempIndex);
+                    m_offset = (i + 2) % m_MaxLength;
+                    m_currentDatalength -= (tempIndex + 1);
                     break;
-
-                case TokenState.PayloadParsing:
-                    if (m_offset < m_index)
-                    {
-                        for (int i = m_offset; i < m_index - 1; i++)
-                        {
-                            if (Buffer[i] == '\r' && Buffer[i + 1] == '\n')
-                            {
-                                m_payload = Encoding.UTF8.GetString(Buffer, m_offset, i - m_offset);
-                                m_state = TokenState.HeaderParsing;
-                                m_offset = i + 2;
-                                return true;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        byte[] temp = new byte[4096];
-                        int tempIndex = 0;
-                        for (int i = m_offset; i < Buffer.Length; i++)
-                        {
-                            temp[tempIndex++] = Buffer[i];
-                        }
-                        for (int i = 0; i < m_index - 1; i++)
-                        {
-                            if (Buffer[i] == '\r' && Buffer[i + 1] == '\n')
-                            {
-                                m_payload = Encoding.UTF8.GetString(temp, 0, tempIndex);
-                                m_payload = m_payload.Trim();
-                                m_state = TokenState.HeaderParsing;
-                                m_offset = i + 2;
-                                return true;
-                            }
-                            else
-                            {
-                                temp[tempIndex++] = Buffer[i];
-                            }
-                        }
-                    }
-                    break;
+                }
             }
 
-            return false;
+            return line;
         }
 
         bool ProcessLine(string line)
         {
             line = line.Trim();
 
-            // crlf crlf
+            switch (m_state)
+            {
+                case TokenState.HeaderParsing:
+                    processHeadr(line);
+                    break;
+
+                case TokenState.PayloadParsing:
+                    processPayload(line);
+                    return true;
+            }
+
+            return false;
+        }
+
+        void processHeadr(string line)
+        {
             if (line.Length == 0)
             {
                 m_state = TokenState.PayloadParsing;
-                return true;
+                return;
             }
 
             string[] parts = line.Split(' ');
@@ -235,8 +151,12 @@ namespace Server
             {
                 m_messageLength = int.Parse(parts[1]);
             }
+        }
 
-            return false;
+        void processPayload(string line)
+        {
+            m_payload = line.Trim();
+            m_state = TokenState.HeaderParsing;
         }
         public string MakeMessage()
         {
