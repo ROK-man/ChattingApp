@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Client
 {
-    internal static class Message
+    internal class Message
     {
         enum MessageType
         {
@@ -18,6 +18,13 @@ namespace Client
         {
             All,
         }
+
+        public string Name;
+        public DateTime Time;
+        public long UnixTime;
+        public int PayloadLength;
+        public string Payload;
+
         public static byte[] MakeMessage(string name, string payload)
         {
             string message = "";

@@ -162,9 +162,13 @@ namespace Server
         {
             Console.WriteLine($"Delay: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - m_unixTime}ms");
             StringBuilder sb = new StringBuilder();
-            sb.Append($"[{m_hour:00}:{m_minute:00}:{m_second:00}] ");
-            sb.Append($"{m_name}: ");
+
+            sb.Append($"name: {m_name}\r\n");
+            sb.Append($"time: {m_year} {m_month} {m_day} {m_hour} {m_minute} {m_second} {m_unixTime}\r\n");
+            sb.Append($"length: {m_payload.Length}\r\n");
+            sb.Append("\r\n");
             sb.Append(m_payload);
+            sb.Append("\r\n");
 
             return sb.ToString();
         }
