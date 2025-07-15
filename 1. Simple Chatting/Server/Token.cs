@@ -44,7 +44,7 @@ namespace Server
         {
             m_index = 0;
             // one total message shoud less than 4KB;
-            m_MaxLength = 100;
+            m_MaxLength = 300;
             Buffer = new byte[m_MaxLength];
             m_offset = 0;
             m_state = TokenState.HeaderParsing;
@@ -88,7 +88,7 @@ namespace Server
         string getLine()
         {
             string line = "";
-            byte[] temp = new byte[m_MaxLength];
+            byte[] temp = new byte[m_MaxLength]; // Big Problem
             int tempIndex = 0;
             for (int i = m_offset; i != m_index; i = (i + 1) % m_MaxLength)
             {

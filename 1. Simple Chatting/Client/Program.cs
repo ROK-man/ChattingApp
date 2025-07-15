@@ -10,8 +10,12 @@ namespace Client
             Console.InputEncoding = System.Text.Encoding.UTF8;
             Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-            Console.WriteLine("Input your m_name:");
-            var name = Console.ReadLine() ?? "default name";
+            Console.WriteLine("Input your name:");
+            var name = Console.ReadLine();
+            if (String.IsNullOrEmpty(name) || Encoding.UTF8.GetByteCount(name) > 20)
+            {
+                name = "Anonymous";
+            }
 
 
             Socket socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -32,17 +36,23 @@ namespace Client
 
             while (true)
             {
-                string? message = Console.ReadLine();
-                if (string.IsNullOrEmpty(message))
+                string? input = Console.ReadLine();
+                if (string.IsNullOrEmpty(input))
                 {
                     continue;
                 }
 
-                message = PackageMessage(name, message);
+                if (input == "test")
+                {
+                    for (int i = 0; i < 1000; i++)
+                    {
+                        socket.Send(Message.MakeMessage(name, $"Test message{i}"));
+                        Thread.Sleep(1);
+                    }
+                    continue;
+                }
 
-                System.Text.Encoding.UTF8.GetBytes(message, 0, message.Length, buffer, 0);
-
-                socket.Send(buffer, 0, System.Text.Encoding.UTF8.GetByteCount(message), SocketFlags.None);
+                socket.Send(Message.MakeMessage(name, input));
             }
         }
 
@@ -55,7 +65,7 @@ namespace Client
         {
             if (e.SocketError == SocketError.Success && e.BytesTransferred > 0)
             {
-                string message = System.Text.Encoding.UTF8.GetString(e.Buffer, e.Offset, e.BytesTransferred);
+                string message = Encoding.UTF8.GetString(e.Buffer, e.Offset, e.BytesTransferred);
                 Console.WriteLine($"{message}");
             }
             else
@@ -71,20 +81,6 @@ namespace Client
             {
                 ProcessReceive(e);
             }
-        }
-
-        static string PackageMessage(string name, string payload)
-        {
-            string message = "";
-            message += $"time: {DateTime.Now.Year} {DateTime.Now.Month} {DateTime.Now.Day} " +
-                $"{DateTime.Now.Hour} {DateTime.Now.Minute} {DateTime.Now.Second} {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}\r\n";
-            message += $"name: {name}\r\n";
-            message += $"length: {Encoding.UTF8.GetByteCount(payload)}\r\n";
-
-            message += "\r\n";
-            message += payload;
-            message += "\r\n";
-            return message;
         }
     }
 }

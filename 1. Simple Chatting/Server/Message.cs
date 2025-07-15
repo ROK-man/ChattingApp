@@ -14,12 +14,12 @@ namespace Server
             Video,
             Image,
         }
-        public enum To
+        public enum Target
         {
             All,
         }
         public MessageType type;
-        public To to;
+        public Target to;
         public string name;
         public DateTime timestamp;
         public long unixTime;

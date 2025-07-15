@@ -14,6 +14,8 @@ namespace Server
         SocketBufferManager m_bufferManager;
         int m_bufferSize;
 
+        Queue<Message> m_messageQueue = new();
+
         public Server(int maxConnections)
         {
             m_bufferSize = 1024;
