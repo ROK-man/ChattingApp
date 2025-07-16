@@ -11,6 +11,8 @@ namespace Client
 {
     internal class ChattingServer
     {
+        MessageManager m_messageManager;
+
         IPAddress m_iP;
         int m_port;
         Socket m_socket;
@@ -27,6 +29,7 @@ namespace Client
             m_parsingBuffer = new byte[4096];
 
             m_semaphore = new(1, 1);
+            m_messageManager = new();
         }
 
         public void Connect()
@@ -49,7 +52,7 @@ namespace Client
             }
 
             Task.Run(() => ParseData());
-            Console.WriteLine("Parsing thread started.");
+            m_messageManager.StartWork();
         }
 
         void ReceiveCompleted(object sender, SocketAsyncEventArgs receiveArg)
@@ -88,8 +91,6 @@ namespace Client
         int m_maxLength = 4096;
         int m_index = 0;
         byte[] m_parsingBuffer;
-        int m_state = 0; // 0: Header, 1: Payload
-        Message message = new();
 
         void TransferData(byte[] buffer, int length)
         {
@@ -122,10 +123,7 @@ namespace Client
                     {
                         break;
                     }
-                    if (message.ParseLine(line))
-                    {
-                        message = new();
-                    }
+                    m_messageManager.ParseLine(line);
                 }
                 m_semaphore.Release();
             }
@@ -151,7 +149,7 @@ namespace Client
             return line;
         }
 
-        public void SendMessage(string name, string payload)
+        public void SendMessage(Message.MessageType type, Message.MessageTarget target,string name, string payload)
         {
             if (string.IsNullOrEmpty(name) || Encoding.UTF8.GetByteCount(name) > 20)
             {

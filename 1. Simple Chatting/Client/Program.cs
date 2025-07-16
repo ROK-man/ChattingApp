@@ -28,7 +28,7 @@ namespace Client
                     continue;
                 }
 
-                server.SendMessage(name, input);
+                server.SendMessage(Message.MessageType.Text, Message.MessageTarget.All, name, input);
             }
         }
     }

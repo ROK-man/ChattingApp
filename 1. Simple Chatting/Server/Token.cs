@@ -165,7 +165,7 @@ namespace Server
 
             sb.Append($"name: {m_name}\r\n");
             sb.Append($"time: {m_year} {m_month} {m_day} {m_hour} {m_minute} {m_second} {m_unixTime}\r\n");
-            sb.Append($"length: {m_payload.Length}\r\n");
+            sb.Append($"length: {m_payload.Length}\r\n"); // string length
             sb.Append("\r\n");
             sb.Append(m_payload);
             sb.Append("\r\n");
