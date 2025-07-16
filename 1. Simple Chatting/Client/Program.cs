@@ -20,6 +20,7 @@ namespace Client
             server.Connect();
             server.StartListening();
 
+            Thread.Sleep(100);
             while (true)
             {
                 string? input = Console.ReadLine();

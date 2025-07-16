@@ -5,9 +5,11 @@ namespace Server
 {
     internal class Server
     {
+        static int ID = 1;
+
         Socket m_listeningSocket;
         public Stack<SocketAsyncEventArgs> m_freeArgsPool;
-        List<Socket> m_connectedSockets;
+        List<SocketAsyncEventArgs> m_connectedSocketArgs;
         object m_lock;
         int m_maxConnections;
         int m_currentConnections;
@@ -23,7 +25,7 @@ namespace Server
             m_currentConnections = 0;
             m_bufferManager = new SocketBufferManager(2 * m_maxConnections * m_bufferSize, m_bufferSize);
             m_freeArgsPool = new Stack<SocketAsyncEventArgs>(2 * m_maxConnections);
-            m_connectedSockets = new();
+            m_connectedSocketArgs = new();
             m_lock = new object();
         }
 
@@ -97,9 +99,10 @@ namespace Server
                 SocketAsyncEventArgs receiveEventArg = m_freeArgsPool.Pop();
 
                 ((Token)receiveEventArg.UserToken).ClientSocket = e.AcceptSocket;
-                lock(m_lock)
+                ((Token)receiveEventArg.UserToken).ID = ID++;
+                lock (m_lock)
                 {
-                    m_connectedSockets.Add(e.AcceptSocket);
+                    m_connectedSocketArgs.Add(receiveEventArg);
                 }
 
                 if (!e.AcceptSocket.ReceiveAsync(receiveEventArg))
@@ -135,9 +138,8 @@ namespace Server
                 Token token = (Token)e.UserToken; 
                 if(token.TransferData(e.Buffer, e.Offset, e.BytesTransferred))
                 {
-                    Console.WriteLine($"[{token.m_minute:00}:{token.m_second:00}] {token.m_name}: {token.m_payload}");
-
-                    BroadCastMessage(token);
+                    //BroadCastMessage(token);
+                    ProcessMessage(token.Message);
                 }
 
                 if (!((Token)e.UserToken).ClientSocket.ReceiveAsync(e))
@@ -151,30 +153,49 @@ namespace Server
             }
         }
 
+        void ProcessMessage(Message message)
+        {
+            switch(message.Type)
+            {
+                case Message.MessageType.Text:
+                    BroadCastMessage(message);
+                    break;
+                case Message.MessageType.Get:
+                    //Console.WriteLine($"Received GET request from {message.Name} at {message.Time}");
+                    // Handle GET request if needed
+                    break;
+                default:
+                    //Console.WriteLine("Unknown message type received.");
+                    break;
+            }
+        }
+
         void ProcessSend(SocketAsyncEventArgs e)
         {
             m_freeArgsPool.Push(e);
             m_bufferManager.SetBuffer(e);
         }
 
-        void BroadCastMessage(Token token)
+        void BroadCastMessage(Message message)
         {
-            string message = token.MakeMessage();
-            if(string.IsNullOrEmpty(message))
-            {
-                return;
-            }
-            byte[] buffer = System.Text.Encoding.UTF8.GetBytes(message);
+            byte[] buffer = Message.MakeMessage(message.Type, message.Target, message.Name, message.Payload);
             lock(m_lock)
             {
-                foreach (Socket socket in m_connectedSockets)
+                foreach (var Arg in m_connectedSocketArgs)
                 {
+                    Token token = (Token)Arg.UserToken;
+                    if(token.ID == message.ID)
+                    {
+                        continue;
+                    }
+
                     SocketAsyncEventArgs sendEventArg = m_freeArgsPool.Pop();
 
                     m_bufferManager.FreeBuffer(sendEventArg);
                     sendEventArg.SetBuffer(buffer, 0, buffer.Length);
 
-                    ((Token)sendEventArg.UserToken).ClientSocket = socket;
+                    Socket socket = token.ClientSocket;
+
                     if (!socket.SendAsync(sendEventArg))
                     {
                         ProcessSend(sendEventArg);
@@ -197,7 +218,7 @@ namespace Server
             socket.Close();
             lock(m_lock)
             {
-                m_connectedSockets.Remove(socket);
+                m_connectedSocketArgs.Remove(e);
             }
             m_currentConnections--;
             m_freeArgsPool.Push(e);

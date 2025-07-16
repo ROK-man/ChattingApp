@@ -14,34 +14,24 @@ namespace Server
     }
     class Token
     {
-        public Socket ClientSocket;
+        public Socket? ClientSocket;
+        public int ID;
 
         // buffer
         public byte[] Buffer;
         public int m_index;
         public int m_offset;
         public int m_currentDatalength;
-
         public int m_MaxLength;
 
-        // header
-        public int m_year;
-        public int m_month;
-        public int m_day;
-        public int m_hour;
-        public int m_minute;
-        public int m_second;
-        public long m_unixTime;
-
-        public string m_name;
-        public int m_messageLength;
-
-        // payload
-        public string m_payload;
+        // message
+        Message m_message;
+        public Message Message;
         TokenState m_state;
 
         public Token()
         {
+            m_message = new();
             m_index = 0;
             // one total message shoud less than 4KB;
             m_MaxLength = 300;
@@ -125,6 +115,8 @@ namespace Server
 
         void processHeadr(string line)
         {
+            m_message.ID = ID;
+
             if (line.Length == 0)
             {
                 m_state = TokenState.PayloadParsing;
@@ -135,39 +127,53 @@ namespace Server
 
             if (parts[0] == "time:")
             {
-                m_year = int.Parse(parts[1]);
-                m_month = int.Parse(parts[2]);
-                m_day = int.Parse(parts[3]);
-                m_hour = int.Parse(parts[4]);
-                m_minute = int.Parse(parts[5]);
-                m_second = int.Parse(parts[6]);
-                m_unixTime = long.Parse(parts[7]);
+                if (parts.Length != 8)
+                {
+                    Console.WriteLine("Error: Invalid time format in header.");
+                    Console.WriteLine($"Received: {line}");
+                    return;
+                }
+                int year = int.Parse(parts[1]);
+                int month = int.Parse(parts[2]);
+                int day = int.Parse(parts[3]);
+                int hour = int.Parse(parts[4]);
+                int minute = int.Parse(parts[5]);
+                int second = int.Parse(parts[6]);
+                long unixTime = long.Parse(parts[7]);
+
+                m_message.Time = new DateTime(year, month, day, hour, minute, second);
+                m_message.UnixTime = unixTime;
             }
             else if (parts[0] == "name:")
             {
-                m_name = parts[1];
+                m_message.Name = parts[1];
             }
             else if (parts[0] == "length:")
             {
-                m_messageLength = int.Parse(parts[1]);
+                m_message.PayloadLength = int.Parse(parts[1]);
             }
         }
 
         void processPayload(string line)
         {
-            m_payload = line.Trim();
+            m_message.Payload = line.Trim();
+
             m_state = TokenState.HeaderParsing;
+            Message = m_message;
+            m_message = new();
+            m_message.ID = ID;
         }
         public string MakeMessage()
         {
-            Console.WriteLine($"Delay: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - m_unixTime}ms");
+            Console.WriteLine($"Delay: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - m_message.UnixTime}ms");
             StringBuilder sb = new StringBuilder();
 
-            sb.Append($"name: {m_name}\r\n");
-            sb.Append($"time: {m_year} {m_month} {m_day} {m_hour} {m_minute} {m_second} {m_unixTime}\r\n");
-            sb.Append($"length: {m_payload.Length}\r\n"); // string length
+            sb.Append($"name: {Message.Name}\r\n");
+            sb.Append($"time: {Message.Time.Year} {Message.Time.Month} {Message.Time.Day} {Message.Time.Hour} {Message.Time.Minute} {Message.Time.Second} {Message.UnixTime}\r\n");
+            sb.Append($"length: {Message.Payload.Length}\r\n"); // string length
             sb.Append("\r\n");
-            sb.Append(m_payload);
+
+            sb.Append(Message.Payload);
             sb.Append("\r\n");
 
             return sb.ToString();

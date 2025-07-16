@@ -28,7 +28,7 @@ namespace Client
         // Payload
         public string? Payload;
 
-        public static byte[] MakeMessage(string name, string payload)
+        public static byte[] MakeMessage(Message.MessageType type, Message.MessageTarget target , string name, string payload)
         {
             string message = "";
 

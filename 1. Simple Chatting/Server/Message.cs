@@ -11,19 +11,42 @@ namespace Server
         public enum MessageType
         {
             Text,
-            Video,
-            Image,
+            Get,
         }
-        public enum Target
+
+        public enum MessageTarget
         {
             All,
         }
-        public MessageType type;
-        public Target to;
-        public string name;
-        public DateTime timestamp;
-        public long unixTime;
-        public int length;
-        public string payload;
+
+        // temp
+        public int ID;
+
+        // Header
+        public MessageType Type = MessageType.Text;
+        public MessageTarget Target = MessageTarget.All;
+        public string? Name;
+        public DateTime Time;
+        public long UnixTime;
+        public int PayloadLength;
+
+        // Payload
+        public string? Payload;
+
+        public static byte[] MakeMessage(Message.MessageType type, Message.MessageTarget target, string name, string payload)
+        {
+            string message = "";
+
+            message += $"Type: {type}\r\n";
+            message += $"Target: {target}\r\n";
+            message += $"name: {name}\r\n";
+            message += $"time: {DateTime.Now.Year} {DateTime.Now.Month} {DateTime.Now.Day} " +
+                $"{DateTime.Now.Hour} {DateTime.Now.Minute} {DateTime.Now.Second} {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}\r\n";
+            message += $"length: {payload.Length}\r\n";
+            message += "\r\n";
+            message += $"{payload}\r\n";
+
+            return System.Text.Encoding.UTF8.GetBytes(message);
+        }
     }
 }

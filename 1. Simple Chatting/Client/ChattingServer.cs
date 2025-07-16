@@ -155,7 +155,7 @@ namespace Client
             {
                 name = "Anonymous";
             }
-            m_socket.Send(Message.MakeMessage(name, payload));
+            m_socket.Send(Message.MakeMessage(Message.MessageType.Text, Message.MessageTarget.All, name, payload));
         }
     }
 }
