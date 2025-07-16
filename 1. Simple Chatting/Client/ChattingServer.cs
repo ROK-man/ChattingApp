@@ -16,7 +16,7 @@ namespace Client
         Socket m_socket;
         byte[] m_receiveBuffer;
 
-        SemaphoreSlim m_semaphore;
+        Semaphore m_semaphore;
 
         public ChattingServer(IPAddress ip, int port)
         {
@@ -26,7 +26,7 @@ namespace Client
             m_receiveBuffer = new byte[4096];
             m_parsingBuffer = new byte[4096];
 
-            m_semaphore = new(0);
+            m_semaphore = new(1, 1);
         }
 
         public void Connect()
@@ -99,6 +99,7 @@ namespace Client
                 return;
             }
 
+            m_semaphore.WaitOne();
             for (int i = 0; i < length; ++i)
             {
                 m_parsingBuffer[m_index] = buffer[i];
@@ -108,11 +109,11 @@ namespace Client
             m_semaphore.Release();
         }
 
-        async Task ParseData()
+        void ParseData()
         {
             while (true)
             {
-                await m_semaphore.WaitAsync();
+                m_semaphore.WaitOne();
 
                 while (true)
                 {
@@ -121,8 +122,12 @@ namespace Client
                     {
                         break;
                     }
-                    ParseLine(line);
+                    if (message.ParseLine(line))
+                    {
+                        message = new();
+                    }
                 }
+                m_semaphore.Release();
             }
         }
 
@@ -144,61 +149,6 @@ namespace Client
             }
 
             return line;
-        }
-
-        void ParseLine(string line)
-        {
-            switch (m_state)
-            {
-                case 0:
-                    ParseHeader(line);
-                    break;
-                case 1:
-
-                    ParsePayload(line);
-                    break;
-            }
-        }
-
-        void ParseHeader(string line)
-        {
-            if (line == "\r")
-            {
-                m_state = 1;
-                return;
-            }
-            line = line.Trim();
-            string[] parts = line.Split(' ');
-
-            if (parts[0] == "time:")
-            {
-                int year = int.Parse(parts[1]);
-                int month = int.Parse(parts[2]);
-                int day = int.Parse(parts[3]);
-                int hour = int.Parse(parts[4]);
-                int minute = int.Parse(parts[5]);
-                int second = int.Parse(parts[6]);
-                long unixTime = long.Parse(parts[7]);
-
-                message.Time = new DateTime(year, month, day, hour, minute, second);
-                message.UnixTime = unixTime;
-            }
-            else if (parts[0] == "name:")
-            {
-                message.Name = parts[1];
-            }
-            else if (parts[0] == "length:")
-            {
-                message.PayloadLength = int.Parse(parts[1]);
-            }
-        }
-
-        void ParsePayload(string line)
-        {
-            message.Payload = line.Trim();
-            Console.WriteLine($"[{message.Time.Minute:00}:{message.Time.Second:00}] {message.Name}: {message.Payload}");
-            message = new();
-            m_state = 0;
         }
 
         public void SendMessage(string name, string payload)

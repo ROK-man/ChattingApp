@@ -3,10 +3,6 @@
   "WorkspaceRootPath": "C:\\Users\\ROKman\\Documents\\ChattingApp\\1. Simple Chatting\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{CFAB4D2C-5ACB-46F8-A612-4C43CC365AB0}|Client\\Client.csproj|c:\\users\\rokman\\documents\\chattingapp\\1. simple chatting\\client\\chattingserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{CFAB4D2C-5ACB-46F8-A612-4C43CC365AB0}|Client\\Client.csproj|solutionrelative:client\\chattingserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{CFAB4D2C-5ACB-46F8-A612-4C43CC365AB0}|Client\\Client.csproj|c:\\users\\rokman\\documents\\chattingapp\\1. simple chatting\\client\\message.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{CFAB4D2C-5ACB-46F8-A612-4C43CC365AB0}|Client\\Client.csproj|solutionrelative:client\\message.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -15,12 +11,16 @@
       "RelativeMoniker": "D:0:0:{CFAB4D2C-5ACB-46F8-A612-4C43CC365AB0}|Client\\Client.csproj|solutionrelative:client\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{2102C7F6-1DBA-4E07-9AED-AE5D079B7E8E}|Server\\Server.csproj|c:\\users\\rokman\\documents\\chattingapp\\1. simple chatting\\server\\server.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{2102C7F6-1DBA-4E07-9AED-AE5D079B7E8E}|Server\\Server.csproj|solutionrelative:server\\server.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{CFAB4D2C-5ACB-46F8-A612-4C43CC365AB0}|Client\\Client.csproj|c:\\users\\rokman\\documents\\chattingapp\\1. simple chatting\\client\\chattingserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{CFAB4D2C-5ACB-46F8-A612-4C43CC365AB0}|Client\\Client.csproj|solutionrelative:client\\chattingserver.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{2102C7F6-1DBA-4E07-9AED-AE5D079B7E8E}|Server\\Server.csproj|c:\\users\\rokman\\documents\\chattingapp\\1. simple chatting\\server\\token.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{2102C7F6-1DBA-4E07-9AED-AE5D079B7E8E}|Server\\Server.csproj|solutionrelative:server\\token.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{2102C7F6-1DBA-4E07-9AED-AE5D079B7E8E}|Server\\Server.csproj|c:\\users\\rokman\\documents\\chattingapp\\1. simple chatting\\server\\server.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{2102C7F6-1DBA-4E07-9AED-AE5D079B7E8E}|Server\\Server.csproj|solutionrelative:server\\server.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -30,37 +30,37 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 4,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 3,
               "Title": "Token.cs",
               "DocumentMoniker": "C:\\Users\\ROKman\\Documents\\ChattingApp\\1. Simple Chatting\\Server\\Token.cs",
               "RelativeDocumentMoniker": "Server\\Token.cs",
               "ToolTip": "C:\\Users\\ROKman\\Documents\\ChattingApp\\1. Simple Chatting\\Server\\Token.cs",
               "RelativeToolTip": "Server\\Token.cs",
-              "ViewState": "AgIAAI0AAAAAAAAAAAAAAKkAAAAfAAAAAAAAAA==",
+              "ViewState": "AgIAAJMAAAAAAAAAAAAAAKoAAAAeAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-07-15T13:15:52.572Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 2,
               "Title": "ChattingServer.cs",
               "DocumentMoniker": "C:\\Users\\ROKman\\Documents\\ChattingApp\\1. Simple Chatting\\Client\\ChattingServer.cs",
               "RelativeDocumentMoniker": "Client\\ChattingServer.cs",
               "ToolTip": "C:\\Users\\ROKman\\Documents\\ChattingApp\\1. Simple Chatting\\Client\\ChattingServer.cs",
               "RelativeToolTip": "Client\\ChattingServer.cs",
-              "ViewState": "AgIAAJMAAAAAAAAAAAAowHAAAAAYAAAAAAAAAA==",
+              "ViewState": "AgIAAHEAAAAAAAAAAAAAwH4AAAAoAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-07-15T11:48:31.319Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 4,
               "Title": "Server.cs",
               "DocumentMoniker": "C:\\Users\\ROKman\\Documents\\ChattingApp\\1. Simple Chatting\\Server\\Server.cs",
               "RelativeDocumentMoniker": "Server\\Server.cs",
@@ -73,26 +73,26 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 1,
               "Title": "Program.cs",
               "DocumentMoniker": "C:\\Users\\ROKman\\Documents\\ChattingApp\\1. Simple Chatting\\Client\\Program.cs",
               "RelativeDocumentMoniker": "Client\\Program.cs",
               "ToolTip": "C:\\Users\\ROKman\\Documents\\ChattingApp\\1. Simple Chatting\\Client\\Program.cs",
               "RelativeToolTip": "Client\\Program.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAAYAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABYAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-07-15T06:10:15.033Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "Message.cs",
               "DocumentMoniker": "C:\\Users\\ROKman\\Documents\\ChattingApp\\1. Simple Chatting\\Client\\Message.cs",
               "RelativeDocumentMoniker": "Client\\Message.cs",
               "ToolTip": "C:\\Users\\ROKman\\Documents\\ChattingApp\\1. Simple Chatting\\Client\\Message.cs",
               "RelativeToolTip": "Client\\Message.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABcAAAAdAAAAAAAAAA==",
+              "ViewState": "AgIAABsAAAAAAAAAAAAowDwAAAAZAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-07-15T06:10:14.42Z",
               "EditorCaption": ""
