@@ -12,15 +12,18 @@ namespace Server
             Console.OutputEncoding = System.Text.Encoding.UTF8;
 
             // server init
-            Server server = new Server(100);
-            server.Init();
-            server.Start();
+            Server.Init();
+            Server.Start();
 
             // input process
             String input;
             while(true)
             {
-                input = Console.ReadLine().ToLower();
+                input = Console.ReadLine()!.ToLower();
+                if(string.IsNullOrEmpty(input))
+                {
+                    break;
+                }
             }
         }
     }

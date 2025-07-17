@@ -6,22 +6,21 @@ using System.Threading.Tasks;
 
 namespace Server
 {
+    public enum MessageType
+    {
+        None,
+        Text,
+        Get,
+    }
+
+    public enum MessageTarget
+    {
+        None,
+        All,
+    }
     internal class Message
     {
-        public enum MessageType
-        {
-            Text,
-            Get,
-        }
-
-        public enum MessageTarget
-        {
-            All,
-        }
-
-        // temp
         public int ID;
-
         // Header
         public MessageType Type = MessageType.Text;
         public MessageTarget Target = MessageTarget.All;
@@ -33,20 +32,35 @@ namespace Server
         // Payload
         public string? Payload;
 
-        public static byte[] MakeMessage(Message.MessageType type, Message.MessageTarget target, string name, string payload)
+        public Message()
         {
-            string message = "";
+            Type = MessageType.None;
+            Target = MessageTarget.None;
+        }
 
-            message += $"Type: {type}\r\n";
-            message += $"Target: {target}\r\n";
-            message += $"name: {name}\r\n";
-            message += $"time: {DateTime.Now.Year} {DateTime.Now.Month} {DateTime.Now.Day} " +
-                $"{DateTime.Now.Hour} {DateTime.Now.Minute} {DateTime.Now.Second} {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}\r\n";
-            message += $"length: {payload.Length}\r\n";
-            message += "\r\n";
-            message += $"{payload}\r\n";
+        public Message(MessageType type, MessageTarget target, string name, string payload)
+        {
+            Type = type;
+            Target = target;
+            Name = name;
+            Time = DateTime.Now;
+            UnixTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+            PayloadLength = payload.Length;
+            Payload = payload;
+        }
 
-            return System.Text.Encoding.UTF8.GetBytes(message);
+        public byte[] GetBytes()
+        {
+            var sb = new StringBuilder();
+            sb.Append($"Type: {Type}\r\n");
+            sb.Append($"Target: {Target}\r\n");
+            sb.Append($"name: {Name}\r\n");
+            sb.Append($"time: {Time.Year} {Time.Month} {Time.Day} {Time.Hour} {Time.Minute} {Time.Second} {UnixTime}\r\n");
+            sb.Append($"length: {PayloadLength}\r\n");
+            sb.Append("\r\n");
+            sb.Append(Payload);
+            sb.Append("\r\n");
+            return Encoding.UTF8.GetBytes(sb.ToString());
         }
     }
 }

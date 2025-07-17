@@ -1,68 +1,94 @@
-﻿using System.Net;
+﻿using System.Collections.Generic;
+using System.Net;
 using System.Net.Sockets;
 
 namespace Server
 {
     internal class Server
     {
+        private static Server m_server = new(100);
+
         static int ID = 1;
 
-        Socket m_listeningSocket;
-        public Stack<SocketAsyncEventArgs> m_freeArgsPool;
-        List<SocketAsyncEventArgs> m_connectedSocketArgs;
-        object m_lock;
-        int m_maxConnections;
-        int m_currentConnections;
-        SocketBufferManager m_bufferManager;
-        int m_bufferSize;
+        private int m_bufferSize;
+        private int m_maxConnections;
+        private int m_currentConnections;
 
-        Queue<Message> m_messageQueue = new();
+        private SocketBufferManager m_bufferManager;
+        private Stack<SocketAsyncEventArgs> m_freeArgsPool;
+        private List<SocketAsyncEventArgs> m_connectedSocketArgs;
 
-        public Server(int maxConnections)
+        private Queue<Message> m_messageQueue;
+        private object m_lock;
+
+        private Socket m_listeningSocket;
+
+        private Server(int maxConnections)
         {
             m_bufferSize = 1024;
             m_maxConnections = maxConnections;
             m_currentConnections = 0;
+
             m_bufferManager = new SocketBufferManager(2 * m_maxConnections * m_bufferSize, m_bufferSize);
             m_freeArgsPool = new Stack<SocketAsyncEventArgs>(2 * m_maxConnections);
-            m_connectedSocketArgs = new();
-            m_lock = new object();
+            m_connectedSocketArgs = [];
+
+            m_messageQueue = new Queue<Message>();
+            m_lock = new();
+
+            m_listeningSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         }
 
-        public void Init()
+        public static void Init()
         {
-            m_bufferManager.InitBuffer();
+            if(m_server == null)
+            {
+                m_server = new(100);
+            }
+
+            m_server.m_bufferManager.InitBuffer();
+
             SocketAsyncEventArgs eventArg;
             Token token;
-
-            for (int i = 0; i < 2 * m_maxConnections; i++)
+            for (int i = 0; i < 2 * m_server.m_maxConnections; i++)
             {
                 eventArg = new SocketAsyncEventArgs();
-
-                eventArg.Completed += new EventHandler<SocketAsyncEventArgs>(IO_Completed);
+                eventArg.Completed += new EventHandler<SocketAsyncEventArgs>(m_server.IO_Completed);
 
                 token = new Token();
                 eventArg.UserToken = token;
 
-                m_bufferManager.SetBuffer(eventArg);
+                m_server.m_bufferManager.SetBuffer(eventArg);
 
-                m_freeArgsPool.Push(eventArg);
+                m_server.m_freeArgsPool.Push(eventArg);
             }
         }
 
-        public void Start()
+        public static void Start()
         {
-            m_listeningSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            m_listeningSocket.Bind(new IPEndPoint(IPAddress.Loopback, 5000));
+            m_server.m_listeningSocket.Bind(new IPEndPoint(IPAddress.Loopback, 5000));
 
             Console.WriteLine("Server is listening on port 5000, Loopback address");
 
-            m_listeningSocket.Listen();
+            m_server.m_listeningSocket.Listen();
 
             SocketAsyncEventArgs acceptArg = new();
-            acceptArg.Completed += new EventHandler<SocketAsyncEventArgs>(AcceptEventArg_Completed);
+            acceptArg.Completed += new EventHandler<SocketAsyncEventArgs>(m_server.AcceptEventArg_Completed);
 
-            StartAccept(acceptArg);
+            m_server.StartAccept(acceptArg);
+        }
+
+        public static void SendAsync(Message message)
+        {
+            m_server.BroadCastMessage(message);
+            switch(message.Type)
+            {
+                case MessageType.Text:
+                    if(message.Target == MessageTarget.All)
+                    {
+                    }
+                    break;
+            }
         }
 
         void StartAccept(SocketAsyncEventArgs acceptArg)
@@ -75,16 +101,16 @@ namespace Server
             }
         }
 
-        void AcceptEventArg_Completed(object sender, SocketAsyncEventArgs e)
+        void AcceptEventArg_Completed(object? sender, SocketAsyncEventArgs e)
         {
             if (m_currentConnections >= m_maxConnections)
             {
                 Console.WriteLine("Max connections reached.");
-                e.AcceptSocket.Close();
+                e.AcceptSocket!.Close();
             }
             else
             {
-                Console.WriteLine($"Client connected: {e.AcceptSocket.RemoteEndPoint}");
+                Console.WriteLine($"Client connected: {e.AcceptSocket!.RemoteEndPoint}");
                 ProcessAccept(e);
             }
 
@@ -94,12 +120,16 @@ namespace Server
         void ProcessAccept(SocketAsyncEventArgs e)
         {
             m_currentConnections++;
-            if(m_freeArgsPool.Count > 0)
+            if(m_freeArgsPool.Count > 0 && e.AcceptSocket != null)
             { 
                 SocketAsyncEventArgs receiveEventArg = m_freeArgsPool.Pop();
 
-                ((Token)receiveEventArg.UserToken).ClientSocket = e.AcceptSocket;
-                ((Token)receiveEventArg.UserToken).ID = ID++;
+                Token token = (Token)receiveEventArg.UserToken!;
+
+                token.ClientSocket = e.AcceptSocket;
+                token.SetId(ID++);
+                token.Start();
+
                 lock (m_lock)
                 {
                     m_connectedSocketArgs.Add(receiveEventArg);
@@ -116,9 +146,8 @@ namespace Server
             }
         }
 
-        void IO_Completed(object sender, SocketAsyncEventArgs e)
+        void IO_Completed(object? sender, SocketAsyncEventArgs e)
         {
-
             switch (e.LastOperation)
             {
                 case SocketAsyncOperation.Receive:
@@ -135,14 +164,10 @@ namespace Server
         {
             if (e.SocketError == SocketError.Success && e.BytesTransferred > 0)
             {
-                Token token = (Token)e.UserToken; 
-                if(token.TransferData(e.Buffer, e.Offset, e.BytesTransferred))
-                {
-                    //BroadCastMessage(token);
-                    ProcessMessage(token.Message);
-                }
+                Token token = (Token)e.UserToken!;
+                token.TransferData(e.Buffer!, e.Offset, e.BytesTransferred);
 
-                if (!((Token)e.UserToken).ClientSocket.ReceiveAsync(e))
+                if (!(token).ClientSocket!.ReceiveAsync(e))
                 {
                     ProcessReceive(e);
                 }
@@ -150,23 +175,6 @@ namespace Server
             else
             {
                 CloseClientSocket(e);
-            }
-        }
-
-        void ProcessMessage(Message message)
-        {
-            switch(message.Type)
-            {
-                case Message.MessageType.Text:
-                    BroadCastMessage(message);
-                    break;
-                case Message.MessageType.Get:
-                    //Console.WriteLine($"Received GET request from {message.Name} at {message.Time}");
-                    // Handle GET request if needed
-                    break;
-                default:
-                    //Console.WriteLine("Unknown message type received.");
-                    break;
             }
         }
 
@@ -178,13 +186,13 @@ namespace Server
 
         void BroadCastMessage(Message message)
         {
-            byte[] buffer = Message.MakeMessage(message.Type, message.Target, message.Name, message.Payload);
+            byte[] buffer = message.GetBytes();
             lock(m_lock)
             {
                 foreach (var Arg in m_connectedSocketArgs)
                 {
-                    Token token = (Token)Arg.UserToken;
-                    if(token.ID == message.ID)
+                    Token token = (Token)Arg.UserToken!;
+                    if (token.ID == message.ID)
                     {
                         continue;
                     }
@@ -194,7 +202,7 @@ namespace Server
                     m_bufferManager.FreeBuffer(sendEventArg);
                     sendEventArg.SetBuffer(buffer, 0, buffer.Length);
 
-                    Socket socket = token.ClientSocket;
+                    Socket socket = token.ClientSocket!;
 
                     if (!socket.SendAsync(sendEventArg))
                     {
@@ -206,8 +214,11 @@ namespace Server
 
         void CloseClientSocket(SocketAsyncEventArgs e)
         {
-            Console.WriteLine($"Closing connection: {((Token)e.UserToken).ClientSocket.RemoteEndPoint}");
-            Socket socket = ((Token)e.UserToken).ClientSocket;
+            Token token = (Token)e.UserToken!;
+            token.End();
+
+            Console.WriteLine($"Closing connection: {(token).ClientSocket!.RemoteEndPoint}");
+            Socket socket = (token).ClientSocket;
 
             try
             {

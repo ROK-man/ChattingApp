@@ -18,34 +18,46 @@ namespace Server
         public int ID;
 
         // buffer
-        public byte[] Buffer;
-        public int m_index;
-        public int m_offset;
-        public int m_currentDatalength;
-        public int m_MaxLength;
+        private byte[] Buffer;
+        private int m_index;
+        private int m_offset;
+        private int m_currentDatalength;
+        private int m_MaxLength;
 
-        // message
-        Message m_message;
-        public Message Message;
-        TokenState m_state;
+        MessageManager m_messageManager;
 
         public Token()
         {
-            m_message = new();
             m_index = 0;
             // one total message shoud less than 4KB;
             m_MaxLength = 300;
             Buffer = new byte[m_MaxLength];
             m_offset = 0;
-            m_state = TokenState.HeaderParsing;
+
+            m_messageManager = new();
         }
 
-        public bool TransferData(byte[] buffer, int offset, int length)
+        public void SetId(int id)
+        {
+            ID = id;
+            m_messageManager.ID = id;
+        }
+
+        public void Start()
+        {
+            m_messageManager.StartWork();
+        }
+
+        public void End()
+        {
+            m_messageManager.EndWork();
+        }
+
+        public void TransferData(byte[] buffer, int offset, int length)
         {
             if (length + m_currentDatalength > m_MaxLength)
             {
                 Console.WriteLine($"Error: Data length exceeds maximum limit. Current length: {m_currentDatalength}, Attempted length: {length}");
-                return false;
             }
 
             for (int i = 0; i < length; i++)
@@ -55,23 +67,16 @@ namespace Server
             }
             m_currentDatalength += length;
 
-            return ParseData();
+            ParseData();
         }
 
         // return true when payload parsed
-        bool ParseData()
+        void ParseData()
         {
-            while (true)
+            string line;
+            while ((line = getLine()).Length != 0)
             {
-                string line = getLine();
-                if (line.Length == 0)
-                {
-                    return false;
-                }
-                if (ProcessLine(line))
-                {
-                    return true;
-                }
+                m_messageManager.ParseLine(line);
             }
         }
 
@@ -93,90 +98,6 @@ namespace Server
             }
 
             return line;
-        }
-
-        bool ProcessLine(string line)
-        {
-            line = line.Trim();
-
-            switch (m_state)
-            {
-                case TokenState.HeaderParsing:
-                    processHeadr(line);
-                    break;
-
-                case TokenState.PayloadParsing:
-                    processPayload(line);
-                    return true;
-            }
-
-            return false;
-        }
-
-        void processHeadr(string line)
-        {
-            m_message.ID = ID;
-
-            if (line.Length == 0)
-            {
-                m_state = TokenState.PayloadParsing;
-                return;
-            }
-
-            string[] parts = line.Split(' ');
-
-            if (parts[0] == "time:")
-            {
-                if (parts.Length != 8)
-                {
-                    Console.WriteLine("Error: Invalid time format in header.");
-                    Console.WriteLine($"Received: {line}");
-                    return;
-                }
-                int year = int.Parse(parts[1]);
-                int month = int.Parse(parts[2]);
-                int day = int.Parse(parts[3]);
-                int hour = int.Parse(parts[4]);
-                int minute = int.Parse(parts[5]);
-                int second = int.Parse(parts[6]);
-                long unixTime = long.Parse(parts[7]);
-
-                m_message.Time = new DateTime(year, month, day, hour, minute, second);
-                m_message.UnixTime = unixTime;
-            }
-            else if (parts[0] == "name:")
-            {
-                m_message.Name = parts[1];
-            }
-            else if (parts[0] == "length:")
-            {
-                m_message.PayloadLength = int.Parse(parts[1]);
-            }
-        }
-
-        void processPayload(string line)
-        {
-            m_message.Payload = line.Trim();
-
-            m_state = TokenState.HeaderParsing;
-            Message = m_message;
-            m_message = new();
-            m_message.ID = ID;
-        }
-        public string MakeMessage()
-        {
-            Console.WriteLine($"Delay: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - m_message.UnixTime}ms");
-            StringBuilder sb = new StringBuilder();
-
-            sb.Append($"name: {Message.Name}\r\n");
-            sb.Append($"time: {Message.Time.Year} {Message.Time.Month} {Message.Time.Day} {Message.Time.Hour} {Message.Time.Minute} {Message.Time.Second} {Message.UnixTime}\r\n");
-            sb.Append($"length: {Message.Payload.Length}\r\n"); // string length
-            sb.Append("\r\n");
-
-            sb.Append(Message.Payload);
-            sb.Append("\r\n");
-
-            return sb.ToString();
         }
     }
 }

@@ -38,7 +38,6 @@ namespace Client
             Target = MessageTarget.None;
         }
 
-
         public Message(MessageType type, MessageTarget target, string name, string payload)
         {
             Type = type;
@@ -53,16 +52,15 @@ namespace Client
         public byte[] ToBytes()
         {
             var sb = new StringBuilder();
-            sb.AppendLine($"Type: {Type}");
-            sb.AppendLine($"Target: {Target}");
-            sb.AppendLine($"name: {Name}");
-            sb.AppendLine($"time: {Time.Year} {Time.Month} {Time.Day} {Time.Hour} {Time.Minute} {Time.Second} {UnixTime}");
-            sb.AppendLine($"length: {PayloadLength}");
-            sb.AppendLine();
-            sb.AppendLine(Payload);
+            sb.Append($"Type: {Type}\r\n");
+            sb.Append($"Target: {Target}\r\n");
+            sb.Append($"name: {Name}\r\n");
+            sb.Append($"time: {Time.Year} {Time.Month} {Time.Day} {Time.Hour} {Time.Minute} {Time.Second} {UnixTime}\r\n");
+            sb.Append($"length: {PayloadLength}\r\n");
+            sb.Append("\r\n");
+            sb.Append(Payload);
+            sb.Append("\r\n");
             return Encoding.UTF8.GetBytes(sb.ToString());
         }
-
-
     }
 }

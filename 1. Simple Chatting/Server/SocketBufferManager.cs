@@ -10,7 +10,7 @@ namespace Server
     internal class SocketBufferManager
     {
         int m_numBytes;
-        byte[] m_buffer;
+        byte[]? m_buffer;
         Stack<int> m_freeIndexPool;
         int m_currentIndex;
         int m_bufferSize;
