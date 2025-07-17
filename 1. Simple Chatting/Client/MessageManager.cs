@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
-using static Client.Message;
+using System.Net.Sockets;
 
 namespace Client
 {
@@ -18,34 +18,50 @@ namespace Client
         Message m_currentMessage;
         int m_currentParsingState; // 0: Header, 1: Payload
 
+        public Socket Socket;
+
         public MessageManager()
         {
             m_receivedMessagesQueue = new();
             m_receivedQueueSemaphore = new SemaphoreSlim(0);
             m_sendMessagesQueue = new();
-
-            m_currentMessage = new();
             m_currentParsingState = 0;
+
+            m_currentMessage = new Message();
         }
         public void StartWork()
         {
             Task.Run(() => ProcessReceivedMessages());
+            Task.Run(() => ProcessSendMessage());
         }
 
-        public void Send(Message.MessageType type, Message.MessageTarget target ,string payload)
+        public void Send(MessageType type, MessageTarget target, string name, string payload)
         {
-            Message message = new Message
-            {
-                Name = "Anonymous",
-                Time = DateTime.Now,
-                UnixTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
-                PayloadLength = payload.Length,
-                Payload = payload
-            };
+            Message message = new(type, target, name, payload);
 
-            lock(lockObject)
+            lock (lockObject)
             {
                 m_sendMessagesQueue.Enqueue(message);
+            }
+        }
+
+        void ProcessSendMessage()
+        {
+            Message? message;
+            while (true)
+            {
+                message = null;
+                lock (lockObject)
+                {
+                    if (m_sendMessagesQueue.Count > 0)
+                    {
+                        message = m_sendMessagesQueue.Dequeue();
+                    }
+                }
+                if (message != null)
+                {
+                    Socket.Send(message.ToBytes());
+                }
             }
         }
 

@@ -29,13 +29,17 @@ namespace Client
             m_parsingBuffer = new byte[4096];
 
             m_semaphore = new(1, 1);
-            m_messageManager = new();
+            m_messageManager = new MessageManager();
         }
 
         public void Connect()
         {
             m_socket.Connect(m_iP, m_port);
-            Console.WriteLine($"Chatting server connected {m_socket.RemoteEndPoint}");
+            if (m_socket.Connected)
+            {
+                Console.WriteLine($"Chatting server connected {m_socket.RemoteEndPoint}");
+                m_messageManager.Socket = m_socket;
+            }
         }
 
         public void StartListening()
@@ -149,13 +153,9 @@ namespace Client
             return line;
         }
 
-        public void SendMessage(Message.MessageType type, Message.MessageTarget target,string name, string payload)
+        public void SendMessage(MessageType type, MessageTarget target, string name, string payload)
         {
-            if (string.IsNullOrEmpty(name) || Encoding.UTF8.GetByteCount(name) > 20)
-            {
-                name = "Anonymous";
-            }
-            m_socket.Send(Message.MakeMessage(Message.MessageType.Text, Message.MessageTarget.All, name, payload));
+            m_messageManager.Send(type, target, name, payload);
         }
     }
 }

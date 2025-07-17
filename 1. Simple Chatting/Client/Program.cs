@@ -29,7 +29,7 @@ namespace Client
                     continue;
                 }
 
-                server.SendMessage(Message.MessageType.Text, Message.MessageTarget.All, name, input);
+                server.SendMessage(MessageType.Text, MessageTarget.All, name, input);
             }
         }
     }
