@@ -17,6 +17,11 @@ namespace Server
         public Socket? ClientSocket;
         public int ID;
 
+        MessageManager m_messageManager;
+        Semaphore m_semaTrans;
+        Semaphore m_semaParse;
+        bool work = false;
+
         // buffer
         private byte[] Buffer;
         private int m_index;
@@ -24,17 +29,17 @@ namespace Server
         private int m_currentDatalength;
         private int m_MaxLength;
 
-        MessageManager m_messageManager;
 
         public Token()
         {
+            m_messageManager = new();
+            m_semaTrans = new Semaphore(0, 1);
+            m_semaParse = new Semaphore(1, 1);
+
             m_index = 0;
-            // one total message shoud less than 4KB;
             m_MaxLength = 300;
             Buffer = new byte[m_MaxLength];
             m_offset = 0;
-
-            m_messageManager = new();
         }
 
         public void SetId(int id)
@@ -45,11 +50,18 @@ namespace Server
 
         public void Start()
         {
+            m_semaTrans = new Semaphore(0, 1);
+            m_semaParse = new Semaphore(1, 1);
+            Task.Run(() => ParseData());
+            work = true;
+
             m_messageManager.StartWork();
         }
 
         public void End()
         {
+            work = false;
+
             m_messageManager.EndWork();
         }
 
@@ -58,29 +70,40 @@ namespace Server
             if (length + m_currentDatalength > m_MaxLength)
             {
                 Console.WriteLine($"Error: Data length exceeds maximum limit. Current length: {m_currentDatalength}, Attempted length: {length}");
+                return;
             }
 
+            m_semaTrans.WaitOne();
             for (int i = 0; i < length; i++)
             {
                 Buffer[m_index++] = buffer[i + offset];
                 m_index %= m_MaxLength;
             }
             m_currentDatalength += length;
-
-            ParseData();
+            m_semaParse.Release();
         }
 
-        // return true when payload parsed
         void ParseData()
         {
             string line;
-            while ((line = getLine()).Length != 0)
+            while (work)
             {
-                m_messageManager.ParseLine(line);
+                m_semaParse.WaitOne();
+
+                while (true)
+                {
+                    line = GetLine();
+                    if (String.IsNullOrEmpty(line))
+                    {
+                        break;
+                    }
+                    m_messageManager.ParseLine(line);
+                }
+                m_semaTrans.Release();
             }
         }
 
-        string getLine()
+        string GetLine()
         {
             string line = "";
             byte[] temp = new byte[m_MaxLength]; // Big Problem
@@ -90,9 +113,10 @@ namespace Server
                 temp[tempIndex++] = Buffer[i];
                 if (Buffer[i] == '\r' && Buffer[(i + 1) % m_MaxLength] == '\n')
                 {
+                    temp[tempIndex++] = (byte)'\n';
                     line = Encoding.UTF8.GetString(temp, 0, tempIndex);
                     m_offset = (i + 2) % m_MaxLength;
-                    m_currentDatalength -= (tempIndex + 1);
+                    m_currentDatalength -= tempIndex;
                     break;
                 }
             }

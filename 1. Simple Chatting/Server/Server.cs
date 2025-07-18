@@ -76,7 +76,12 @@ namespace Server
             m_server.StartAccept(acceptArg);
         }
 
-        public static void SendAsync(Message message)
+        public static void ProcessMessage(Message message)
+        {
+            m_server.SendAsync(message);
+        }
+
+        public void SendAsync(Message message)
         {
             m_server.BroadCastMessage(message);
             switch(message.Type)
@@ -184,7 +189,7 @@ namespace Server
 
         void BroadCastMessage(Message message)
         {
-            byte[] buffer = message.GetBytes();
+            byte[] buffer = message.ToBytes();
             lock(m_lock)
             {
                 foreach (var Arg in m_connectedSocketArgs)

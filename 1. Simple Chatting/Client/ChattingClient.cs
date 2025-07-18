@@ -18,7 +18,8 @@ namespace Client
         Socket m_socket;
         byte[] m_receiveBuffer;
 
-        Semaphore m_semaphore;
+        Semaphore m_semaTrans;
+        Semaphore m_semaParse;
 
         private ChattingClient()
         {
@@ -26,7 +27,8 @@ namespace Client
             m_receiveBuffer = new byte[4096];
             m_parsingBuffer = new byte[4096];
 
-            m_semaphore = new(1, 1);
+            m_semaTrans = new(0, 1);
+            m_semaParse = new(1, 1);
             m_messageManager = new MessageManager();
         }
 
@@ -122,21 +124,21 @@ namespace Client
                 return;
             }
 
-            m_semaphore.WaitOne();
+            m_semaTrans.WaitOne();
             for (int i = 0; i < length; ++i)
             {
                 m_parsingBuffer[m_index] = buffer[i];
                 m_index = (m_index + 1) % m_maxLength;
             }
             m_currentDataLength += length;
-            m_semaphore.Release();
+            m_semaParse.Release();
         }
 
         void ParseData()
         {
             while (true)
             {
-                m_semaphore.WaitOne();
+                m_semaParse.WaitOne();
 
                 while (true)
                 {
@@ -147,7 +149,7 @@ namespace Client
                     }
                     m_messageManager.ParseLine(line);
                 }
-                m_semaphore.Release();
+                m_semaTrans.Release();
             }
         }
 
@@ -161,9 +163,10 @@ namespace Client
                 temp[tempIndex++] = m_parsingBuffer[i];
                 if (m_parsingBuffer[i] == '\r' && m_parsingBuffer[(i + 1) % m_maxLength] == '\n')
                 {
+                    temp[tempIndex++] = (byte)'\n';
                     line = Encoding.UTF8.GetString(temp, 0, tempIndex);
                     m_offset = (i + 2) % m_maxLength;
-                    m_currentDataLength -= (tempIndex + 1);
+                    m_currentDataLength -= tempIndex;
                     break;
                 }
             }

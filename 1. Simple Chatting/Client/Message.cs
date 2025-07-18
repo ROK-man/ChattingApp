@@ -10,7 +10,7 @@ namespace Client
     {
         None,
         Text,
-        Get,
+        Login,
     }
 
     public enum MessageTarget
@@ -35,12 +35,19 @@ namespace Client
 
         public Message()
         {
+            m_isParsingHeader = true;
             Type = MessageType.None;
             Target = MessageTarget.None;
+            Name = null;
+            Time = DateTime.MinValue;
+            UnixTime = 0;
+            PayloadLength = 0;
+            Payload = null;
         }
 
         public Message(MessageType type, MessageTarget target, string name, string payload)
         {
+            m_isParsingHeader = true;
             Type = type;
             Target = target;
             Name = name;
@@ -53,12 +60,24 @@ namespace Client
         public byte[] ToBytes()
         {
             var sb = new StringBuilder();
+            if (Type == MessageType.None || Name == null || Time == DateTime.MinValue
+                    || UnixTime == 0 || PayloadLength == 0 || Payload == null)
+            {
+                Console.WriteLine("Wrong message processed.");
+                return Array.Empty<byte>();
+            }
             sb.Append($"Type: {Type}\r\n");
-            sb.Append($"Target: {Target}\r\n");
             sb.Append($"name: {Name}\r\n");
             sb.Append($"time: {Time.Year} {Time.Month} {Time.Day} {Time.Hour} {Time.Minute} {Time.Second} {UnixTime}\r\n");
             sb.Append($"length: {PayloadLength}\r\n");
+
+            if (Target != MessageTarget.None)
+            {
+                sb.Append($"Target: {Target}\r\n");
+            }
+
             sb.Append("\r\n");
+
             sb.Append(Payload);
             sb.Append("\r\n");
             return Encoding.UTF8.GetBytes(sb.ToString());
@@ -66,7 +85,7 @@ namespace Client
 
         public bool ParseLine(string line)
         {
-            if(m_isParsingHeader)
+            if (m_isParsingHeader)
             {
                 ParseHeader(line);
                 return false;
@@ -80,7 +99,7 @@ namespace Client
 
         void ParseHeader(string line)
         {
-            if (line == "\r")
+            if (line == "\r\n")
             {
                 m_isParsingHeader = false;
                 return;
@@ -115,6 +134,28 @@ namespace Client
             {
                 PayloadLength = int.Parse(parts[1]);
             }
+            else if (parts[0] == "Type:")
+            {
+                if (Enum.TryParse(parts[1], out MessageType type))
+                {
+                    Type = type;
+                }
+                else
+                {
+                    Console.WriteLine($"Error: Invalid message type '{parts[1]}' in header.");
+                }
+            }
+            else if (parts[0] == "Target:")
+            {
+                if (Enum.TryParse(parts[1], out MessageTarget target))
+                {
+                    Target = target;
+                }
+                else
+                {
+                    Console.WriteLine($"Error: Invalid message target '{parts[1]}' in header.");
+                }
+            }
         }
 
         void ParsePayload(string line)
@@ -124,6 +165,18 @@ namespace Client
             {
                 m_isParsingHeader = true;
             }
+        }
+
+        public void Reset()
+        {
+            m_isParsingHeader = true;
+            Type = MessageType.None;
+            Target = MessageTarget.None;
+            Name = null;
+            Time = DateTime.MinValue;
+            UnixTime = 0;
+            PayloadLength = 0;
+            Payload = null;
         }
     }
 }
