@@ -18,7 +18,6 @@ namespace Server
         private Stack<SocketAsyncEventArgs> m_freeArgsPool;
         private List<SocketAsyncEventArgs> m_connectedSocketArgs;
 
-        private Queue<Message> m_messageQueue;
         private object m_lock;
 
         private Socket m_listeningSocket;
@@ -33,7 +32,6 @@ namespace Server
             m_freeArgsPool = new Stack<SocketAsyncEventArgs>(2 * m_maxConnections);
             m_connectedSocketArgs = [];
 
-            m_messageQueue = new Queue<Message>();
             m_lock = new();
 
             m_listeningSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);

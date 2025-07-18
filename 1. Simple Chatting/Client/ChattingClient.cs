@@ -9,21 +9,19 @@ using System.Xml.Linq;
 
 namespace Client
 {
-    internal class ChattingServer
+    internal class ChattingClient
     {
+        private static ChattingClient? m_Client;
+
         MessageManager m_messageManager;
 
-        IPAddress m_iP;
-        int m_port;
         Socket m_socket;
         byte[] m_receiveBuffer;
 
         Semaphore m_semaphore;
 
-        public ChattingServer(IPAddress ip, int port)
+        private ChattingClient()
         {
-            m_iP = ip;
-            m_port = port;
             m_socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             m_receiveBuffer = new byte[4096];
             m_parsingBuffer = new byte[4096];
@@ -32,34 +30,54 @@ namespace Client
             m_messageManager = new MessageManager();
         }
 
-        public void Connect()
+        public static void Init()
         {
-            m_socket.Connect(m_iP, m_port);
-            if (m_socket.Connected)
+            if (m_Client == null)
             {
-                Console.WriteLine($"Chatting server connected {m_socket.RemoteEndPoint}");
-                m_messageManager.Socket = m_socket;
+                m_Client = new ChattingClient();
+            }
+            else
+            {
+                Console.WriteLine("Chatting client is already initialized.");
             }
         }
 
-        public void StartListening()
+        public static void Connect(IPAddress ip, int port)
+        {
+            m_Client!.m_socket.Connect(ip, port);
+            if (m_Client.m_socket.Connected)
+            {
+                Console.WriteLine($"Chatting server connected {m_Client.m_socket.RemoteEndPoint}");
+            }
+        }
+
+        public static void StartListening()
         {
             SocketAsyncEventArgs receiveArg = new();
-            receiveArg.SetBuffer(m_receiveBuffer, 0, m_receiveBuffer.Length);
-            receiveArg.Completed += new EventHandler<SocketAsyncEventArgs>(ReceiveCompleted);
+            receiveArg.SetBuffer(m_Client!.m_receiveBuffer, 0, m_Client.m_receiveBuffer.Length);
+            receiveArg.Completed += new EventHandler<SocketAsyncEventArgs>(m_Client.ReceiveCompleted);
 
             Console.WriteLine("Start receiving messages");
 
-            if (!m_socket.ReceiveAsync(receiveArg))
+            if (!m_Client.m_socket.ReceiveAsync(receiveArg))
             {
-                ProcessReceive(receiveArg);
+                m_Client.ProcessReceive(receiveArg);
             }
 
-            Task.Run(() => ParseData());
-            m_messageManager.StartWork();
+            Task.Run(() => m_Client.ParseData());
+            m_Client.m_messageManager.StartWork();
+        }
+        public static void SendMessage(MessageType type, MessageTarget target, string name, string payload)
+        {
+            m_Client!.m_socket.SendAsync((new Message(type, target, name, payload).ToBytes()));
         }
 
-        void ReceiveCompleted(object sender, SocketAsyncEventArgs receiveArg)
+        public static void ProcessMessage(Message message)
+        {
+            Console.WriteLine($"[{message.Time.Minute:00}:{message.Time.Second:00}] {message.Name}: {message.Payload}");
+        }
+
+        void ReceiveCompleted(object? sender, SocketAsyncEventArgs receiveArg)
         {
             ProcessReceive(receiveArg);
         }
@@ -67,7 +85,7 @@ namespace Client
         {
             if (e.SocketError == SocketError.Success && e.BytesTransferred > 0)
             {
-                TransferData(e.Buffer, e.BytesTransferred);
+                TransferData(e.Buffer!, e.BytesTransferred);
             }
             else if (e.SocketError != SocketError.Success)
             {
@@ -151,11 +169,6 @@ namespace Client
             }
 
             return line;
-        }
-
-        public void SendMessage(MessageType type, MessageTarget target, string name, string payload)
-        {
-            m_messageManager.Send(type, target, name, payload);
         }
     }
 }

@@ -16,11 +16,12 @@ namespace Client
                 name = "Anonymous";
             }
 
-            ChattingServer server = new(IPAddress.Loopback, 5000);
-            server.Connect();
-            server.StartListening();
+            ChattingClient.Init();
+            ChattingClient.Connect(IPAddress.Loopback, 5000);
+            ChattingClient.StartListening();
 
             Thread.Sleep(100);
+
             while (true)
             {
                 string? input = Console.ReadLine();
@@ -29,7 +30,7 @@ namespace Client
                     continue;
                 }
 
-                server.SendMessage(MessageType.Text, MessageTarget.All, name, input);
+                ChattingClient.SendMessage(MessageType.Text, MessageTarget.All, name, input);
             }
         }
     }
