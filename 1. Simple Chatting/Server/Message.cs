@@ -20,6 +20,8 @@ namespace Server
     }
     internal class Message
     {
+        public Token? Token;
+
         public int ID;
         bool m_isParsingHeader = true;
 
@@ -34,7 +36,7 @@ namespace Server
         // Payload
         public string? Payload;
 
-        public Message()
+        public Message(Token token)
         {
             m_isParsingHeader = true;
             Type = MessageType.None;
@@ -44,6 +46,7 @@ namespace Server
             UnixTime = 0;
             PayloadLength = 0;
             Payload = null;
+            Token = token;
         }
 
         public Message(MessageType type, MessageTarget target, string name, string payload)
@@ -56,6 +59,7 @@ namespace Server
             UnixTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
             PayloadLength = payload.Length;
             Payload = payload;
+            Token = null;
         }
 
         public byte[] ToBytes()

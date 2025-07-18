@@ -15,7 +15,7 @@ namespace Server
     class Token
     {
         public Socket? ClientSocket;
-        public int ID;
+        public string Name;
 
         MessageManager m_messageManager;
         Semaphore m_semaTrans;
@@ -32,7 +32,7 @@ namespace Server
 
         public Token()
         {
-            m_messageManager = new();
+            m_messageManager = new(this);
             m_semaTrans = new Semaphore(0, 1);
             m_semaParse = new Semaphore(1, 1);
 
@@ -40,12 +40,6 @@ namespace Server
             m_MaxLength = 300;
             Buffer = new byte[m_MaxLength];
             m_offset = 0;
-        }
-
-        public void SetId(int id)
-        {
-            ID = id;
-            m_messageManager.ID = id;
         }
 
         public void Start()
@@ -56,6 +50,8 @@ namespace Server
             work = true;
 
             m_messageManager.StartWork();
+
+            Name = string.Empty;
         }
 
         public void End()

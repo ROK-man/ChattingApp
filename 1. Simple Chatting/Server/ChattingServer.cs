@@ -8,8 +8,6 @@ namespace Server
     {
         private static ChattingServer Server = new(100);
 
-        static int ID = 1;
-
         private int m_bufferSize;
         private int m_maxConnections;
         private int m_currentConnections;
@@ -123,7 +121,7 @@ namespace Server
                 Token token = (Token)receiveEventArg.UserToken!;
 
                 token.ClientSocket = e.AcceptSocket;
-                token.SetId(ID++);
+                token.Name = string.Empty;
                 token.Start();
 
                 lock (m_lock)

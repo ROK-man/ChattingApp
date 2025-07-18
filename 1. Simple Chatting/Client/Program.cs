@@ -9,18 +9,14 @@ namespace Client
             Console.InputEncoding = System.Text.Encoding.UTF8;
             Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-            Console.WriteLine("Input your name:");
-            var name = Console.ReadLine();
-            if (String.IsNullOrEmpty(name) || Encoding.UTF8.GetByteCount(name) > 20)
-            {
-                name = "Anonymous";
-            }
-
             ChattingClient.Init();
             ChattingClient.Connect(IPAddress.Loopback, 5000);
             ChattingClient.StartListening();
 
             Thread.Sleep(100);
+            ChattingClient.Login();
+            while (ChattingClient.IsLogined() == false) { }
+            Console.WriteLine("Login Success!!");
 
             while (true)
             {
@@ -30,7 +26,7 @@ namespace Client
                     continue;
                 }
 
-                ChattingClient.SendMessage(MessageType.Text, MessageTarget.All, name, input);
+                ChattingClient.SendMessage(MessageType.Text, MessageTarget.All, input);
             }
         }
     }

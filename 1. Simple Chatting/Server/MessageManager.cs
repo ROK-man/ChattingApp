@@ -5,26 +5,28 @@ namespace Server
 {
     internal class MessageManager
     {
-        public int ID;
+        Token m_token;
 
         ConcurrentQueue<Message> m_receivedMessagesQueue;
         SemaphoreSlim m_receivedQueueSemaphore;
 
-        Message m_currentMessage;
+        Message m_message;
 
         bool work;
 
-        public MessageManager()
+        public MessageManager(Token token)
         {
             work = false;
             m_receivedMessagesQueue = new();
             m_receivedQueueSemaphore = new SemaphoreSlim(0);
 
-            m_currentMessage = new Message();
+            m_message = new Message(token);
+            m_token = token;
         }
 
         public void StartWork()
         {
+            m_message = new(m_token);
             work = true;
             Task.Run(() => ProcessReceivedMessages());
         }
@@ -36,9 +38,10 @@ namespace Server
 
         public void ParseLine(string line)
         {
-            if (m_currentMessage.ParseLine(line))
+            if (m_message.ParseLine(line))
             {
-                m_receivedMessagesQueue.Enqueue(m_currentMessage);
+                m_receivedMessagesQueue.Enqueue(m_message);
+                m_message = new(m_token);
                 m_receivedQueueSemaphore.Release();
             }
         }
@@ -52,8 +55,6 @@ namespace Server
 
                 if (m_receivedMessagesQueue.TryDequeue(out Message? message))
                 {
-                    Console.WriteLine($"[{message.Time.Minute:00}:{message.Time.Second:00}] {message.Name}: {message.Payload}");
-                    message.ID = ID;
                     ChattingServer.ProcessMessage(message);
                 }
             }

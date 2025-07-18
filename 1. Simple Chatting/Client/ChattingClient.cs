@@ -11,7 +11,8 @@ namespace Client
 {
     internal class ChattingClient
     {
-        private static ChattingClient? m_Client;
+        public string UserName;
+        private static ChattingClient? m_client;
 
         MessageManager m_messageManager;
 
@@ -30,13 +31,15 @@ namespace Client
             m_semaTrans = new(0, 1);
             m_semaParse = new(1, 1);
             m_messageManager = new MessageManager();
+
+            UserName = string.Empty;
         }
 
         public static void Init()
         {
-            if (m_Client == null)
+            if (m_client == null)
             {
-                m_Client = new ChattingClient();
+                m_client = new ChattingClient();
             }
             else
             {
@@ -46,37 +49,77 @@ namespace Client
 
         public static void Connect(IPAddress ip, int port)
         {
-            m_Client!.m_socket.Connect(ip, port);
-            if (m_Client.m_socket.Connected)
+            m_client!.m_socket.Connect(ip, port);
+            if (m_client.m_socket.Connected)
             {
-                Console.WriteLine($"Chatting server connected {m_Client.m_socket.RemoteEndPoint}");
+                Console.WriteLine($"Chatting server connected {m_client.m_socket.RemoteEndPoint}");
             }
         }
 
         public static void StartListening()
         {
             SocketAsyncEventArgs receiveArg = new();
-            receiveArg.SetBuffer(m_Client!.m_receiveBuffer, 0, m_Client.m_receiveBuffer.Length);
-            receiveArg.Completed += new EventHandler<SocketAsyncEventArgs>(m_Client.ReceiveCompleted);
+            receiveArg.SetBuffer(m_client!.m_receiveBuffer, 0, m_client.m_receiveBuffer.Length);
+            receiveArg.Completed += new EventHandler<SocketAsyncEventArgs>(m_client.ReceiveCompleted);
 
             Console.WriteLine("Start receiving messages");
 
-            if (!m_Client.m_socket.ReceiveAsync(receiveArg))
+            if (!m_client.m_socket.ReceiveAsync(receiveArg))
             {
-                m_Client.ProcessReceive(receiveArg);
+                m_client.ProcessReceive(receiveArg);
             }
 
-            Task.Run(() => m_Client.ParseData());
-            m_Client.m_messageManager.StartWork();
+            Task.Run(() => m_client.ParseData());
+            m_client.m_messageManager.StartWork();
         }
-        public static void SendMessage(MessageType type, MessageTarget target, string name, string payload)
+
+        public static void SendMessage(MessageType type, MessageTarget target, string payload)
         {
-            m_Client!.m_socket.SendAsync((new Message(type, target, name, payload).ToBytes()));
+            SendMessage(type, target, m_client!.UserName, payload);
+        }
+        private static void SendMessage(MessageType type, MessageTarget target, string name, string payload)
+        {
+            m_client!.m_socket.SendAsync((new Message(type, target, name, payload).ToBytes()));
         }
 
         public static void ProcessMessage(Message message)
         {
-            Console.WriteLine($"[{message.Time.Minute:00}:{message.Time.Second:00}] {message.Name}: {message.Payload}");
+            if(message.Type == MessageType.Text)
+                Console.WriteLine($"[{message.Time.Minute:00}:{message.Time.Second:00}] {message.Name}: {message.Payload}");
+            else if(message.Type == MessageType.Login)
+            {
+                if(message.Payload == "Failed")
+                {
+                    Console.WriteLine("Input different name please");
+                    Login();
+                }
+                else
+                {
+                    m_client!.UserName = message.Name!;
+                }
+            }
+        }
+
+        public static void Login()
+        {
+            Console.Write("Input your name: ");
+            var name = Console.ReadLine();
+            if(string.IsNullOrEmpty(name))
+            {
+                return;
+            }
+
+            SendMessage(MessageType.Login, MessageTarget.None, name, "hello");
+        }
+
+        public static bool IsLogined()
+        {
+            if(m_client.UserName == string.Empty)
+            {
+                return false;
+            }
+
+            return true;
         }
 
         void ReceiveCompleted(object? sender, SocketAsyncEventArgs receiveArg)
