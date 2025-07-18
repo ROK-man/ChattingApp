@@ -12,26 +12,26 @@ namespace Server
 
         Message m_currentMessage;
 
-        public Socket? Socket;
-
-        int temp = 0;
+        bool work;
 
         public MessageManager()
         {
+            work = false;
             m_receivedMessagesQueue = new();
             m_receivedQueueSemaphore = new SemaphoreSlim(0);
 
             m_currentMessage = new Message();
         }
+
         public void StartWork()
         {
-            temp = 1;
+            work = true;
             Task.Run(() => ProcessReceivedMessages());
         }
 
         public void EndWork()
         {
-            temp = 0;
+            work = false;
         }
 
         public void ParseLine(string line)
@@ -46,18 +46,17 @@ namespace Server
         void ProcessReceivedMessages()
         {
             Console.WriteLine("Message processing started.");
-            while (temp == 1)
+            while (work)
             {
                 m_receivedQueueSemaphore.Wait();
 
-                if (m_receivedMessagesQueue.TryDequeue(out Message message))
+                if (m_receivedMessagesQueue.TryDequeue(out Message? message))
                 {
                     Console.WriteLine($"[{message.Time.Minute:00}:{message.Time.Second:00}] {message.Name}: {message.Payload}");
                     message.ID = ID;
-                    Server.ProcessMessage(message);
+                    ChattingServer.ProcessMessage(message);
                 }
             }
         }
-
     }
 }

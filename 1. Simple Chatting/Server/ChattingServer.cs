@@ -4,9 +4,9 @@ using System.Net.Sockets;
 
 namespace Server
 {
-    internal class Server
+    internal class ChattingServer
     {
-        private static Server m_server = new(100);
+        private static ChattingServer Server = new(100);
 
         static int ID = 1;
 
@@ -17,12 +17,12 @@ namespace Server
         private SocketBufferManager m_bufferManager;
         private Stack<SocketAsyncEventArgs> m_freeArgsPool;
         private List<SocketAsyncEventArgs> m_connectedSocketArgs;
-
         private object m_lock;
+        private MessageProcessor m_messageProcessor;
 
         private Socket m_listeningSocket;
 
-        private Server(int maxConnections)
+        private ChattingServer(int maxConnections)
         {
             m_bufferSize = 1024;
             m_maxConnections = maxConnections;
@@ -31,67 +31,60 @@ namespace Server
             m_bufferManager = new SocketBufferManager(2 * m_maxConnections * m_bufferSize, m_bufferSize);
             m_freeArgsPool = new Stack<SocketAsyncEventArgs>(2 * m_maxConnections);
             m_connectedSocketArgs = [];
-
             m_lock = new();
+            m_messageProcessor = new(m_connectedSocketArgs, m_lock);
+
 
             m_listeningSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
         }
 
         public static void Init()
         {
-            if(m_server == null)
+            if(Server == null)
             {
-                m_server = new(100);
+                Server = new(100);
             }
 
-            m_server.m_bufferManager.InitBuffer();
+            Server.m_bufferManager.InitBuffer();
 
             SocketAsyncEventArgs eventArg;
             Token token;
-            for (int i = 0; i < 2 * m_server.m_maxConnections; i++)
+            for (int i = 0; i < 2 * Server.m_maxConnections; i++)
             {
                 eventArg = new SocketAsyncEventArgs();
-                eventArg.Completed += new EventHandler<SocketAsyncEventArgs>(m_server.IO_Completed);
+                eventArg.Completed += new EventHandler<SocketAsyncEventArgs>(Server.IO_Completed);
 
                 token = new Token();
                 eventArg.UserToken = token;
 
-                m_server.m_bufferManager.SetBuffer(eventArg);
+                Server.m_bufferManager.SetBuffer(eventArg);
 
-                m_server.m_freeArgsPool.Push(eventArg);
+                Server.m_freeArgsPool.Push(eventArg);
             }
         }
 
         public static void Start()
         {
-            m_server.m_listeningSocket.Bind(new IPEndPoint(IPAddress.Loopback, 5000));
+            Server.m_listeningSocket.Bind(new IPEndPoint(IPAddress.Loopback, 5000));
 
-            Console.WriteLine("Server is listening on port 5000, Loopback address");
+            Console.WriteLine("ChattingServer is listening on port 5000, Loopback address");
 
-            m_server.m_listeningSocket.Listen();
+            Server.m_listeningSocket.Listen();
 
             SocketAsyncEventArgs acceptArg = new();
-            acceptArg.Completed += new EventHandler<SocketAsyncEventArgs>(m_server.AcceptEventArg_Completed);
+            acceptArg.Completed += new EventHandler<SocketAsyncEventArgs>(Server.AcceptEventArg_Completed);
 
-            m_server.StartAccept(acceptArg);
+            Server.StartAccept(acceptArg);
         }
 
         public static void ProcessMessage(Message message)
         {
-            m_server.SendAsync(message);
+            Server.m_messageProcessor.ProcessMessage(message);
         }
-
-        public void SendAsync(Message message)
+        
+        public static void SendMessage(Socket socket, Message message)
         {
-            m_server.BroadCastMessage(message);
-            switch(message.Type)
-            {
-                case MessageType.Text:
-                    if(message.Target == MessageTarget.All)
-                    {
-                    }
-                    break;
-            }
+            socket.SendAsync(message.ToBytes());
         }
 
         void StartAccept(SocketAsyncEventArgs acceptArg)
@@ -185,34 +178,6 @@ namespace Server
         {
             m_freeArgsPool.Push(e);
             m_bufferManager.SetBuffer(e);
-        }
-
-        void BroadCastMessage(Message message)
-        {
-            byte[] buffer = message.ToBytes();
-            lock(m_lock)
-            {
-                foreach (var Arg in m_connectedSocketArgs)
-                {
-                    Token token = (Token)Arg.UserToken!;
-                    if (token.ID == message.ID)
-                    {
-                        continue;
-                    }
-
-                    SocketAsyncEventArgs sendEventArg = m_freeArgsPool.Pop();
-
-                    m_bufferManager.FreeBuffer(sendEventArg);
-                    sendEventArg.SetBuffer(buffer, 0, buffer.Length);
-
-                    Socket socket = token.ClientSocket!;
-
-                    if (!socket.SendAsync(sendEventArg))
-                    {
-                        ProcessSend(sendEventArg);
-                    }
-                }
-            }
         }
 
         void CloseClientSocket(SocketAsyncEventArgs e)

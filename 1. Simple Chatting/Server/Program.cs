@@ -12,8 +12,8 @@ namespace Server
             Console.OutputEncoding = System.Text.Encoding.UTF8;
 
             // server init
-            Server.Init();
-            Server.Start();
+            ChattingServer.Init();
+            ChattingServer.Start();
 
             // input process
             String input;
