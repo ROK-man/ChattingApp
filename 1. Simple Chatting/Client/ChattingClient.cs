@@ -11,7 +11,7 @@ namespace Client
 {
     internal class ChattingClient
     {
-        public string UserName;
+        public static string UserName;
         private static ChattingClient? m_client;
 
         MessageManager m_messageManager;
@@ -21,6 +21,8 @@ namespace Client
 
         Semaphore m_semaTrans;
         Semaphore m_semaParse;
+
+        private static TaskCompletionSource<bool> _loginTcs = new();
 
         private ChattingClient()
         {
@@ -33,6 +35,7 @@ namespace Client
             m_messageManager = new MessageManager();
 
             UserName = string.Empty;
+            _loginTcs = new();
         }
 
         public static void Init()
@@ -75,27 +78,33 @@ namespace Client
 
         public static void SendMessage(MessageType type, MessageTarget target, string payload)
         {
-            SendMessage(type, target, m_client!.UserName, payload);
+            SendMessage(type, target, UserName, payload);
         }
         private static void SendMessage(MessageType type, MessageTarget target, string name, string payload)
         {
             m_client!.m_socket.SendAsync((new Message(type, target, name, payload).ToBytes()));
         }
+        public static void SendMessage(Message message)
+        {
+            m_client!.m_socket.SendAsync(message.ToBytes());
+        }
 
         public static void ProcessMessage(Message message)
         {
-            if(message.Type == MessageType.Text)
-                Console.WriteLine($"[{message.Time.Minute:00}:{message.Time.Second:00}] {message.Name}: {message.Payload}");
-            else if(message.Type == MessageType.Login)
+            if (message.Type == MessageType.Text)
             {
-                if(message.Payload == "Failed")
+                Console.WriteLine($"[{message.Time.Minute:00}:{message.Time.Second:00}] {message.Name}: {message.Payload}");
+            }
+            else if (message.Type == MessageType.Login)
+            {
+                if (message.Payload == "Failed")
                 {
                     Console.WriteLine("Input different name please");
                     Login();
                 }
                 else
                 {
-                    m_client!.UserName = message.Name!;
+                    UserName = message.Name!;
                 }
             }
         }
@@ -104,7 +113,7 @@ namespace Client
         {
             Console.Write("Input your name: ");
             var name = Console.ReadLine();
-            if(string.IsNullOrEmpty(name))
+            if (string.IsNullOrEmpty(name))
             {
                 return;
             }
@@ -114,7 +123,7 @@ namespace Client
 
         public static bool IsLogined()
         {
-            if(m_client.UserName == string.Empty)
+            if (UserName == string.Empty)
             {
                 return false;
             }

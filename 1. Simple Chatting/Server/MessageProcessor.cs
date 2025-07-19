@@ -34,6 +34,9 @@ namespace Server
                     Console.WriteLine($"[{message.Time.Minute:00}:{message.Time.Second:00}] {message.Name}: {message.Payload}");
                     BroadcastMessage(message);
                     break;
+                case MessageTarget.Whisper:
+                    SendWhisper(message);
+                    break;
             }
         }
 
@@ -49,10 +52,24 @@ namespace Server
                     {
                         continue;
                     }
-
                     Socket socket = token.ClientSocket!;
 
                     ChattingServer.SendMessage(socket, message);
+                }
+            }
+        }
+
+        void SendWhisper(Message message)
+        {
+            lock (m_lock)
+            {
+                foreach(var Arg in m_socketArgs)
+                {
+                    Token token = (Token)Arg.UserToken;
+                    if(token.Name == message.TargetName)
+                    {
+                        ChattingServer.SendMessage(token.ClientSocket, message);
+                    }
                 }
             }
         }

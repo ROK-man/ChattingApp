@@ -17,6 +17,7 @@ namespace Server
     {
         None,
         All,
+        Whisper,
     }
     internal class Message
     {
@@ -29,6 +30,7 @@ namespace Server
         public MessageType Type = MessageType.Text;
         public MessageTarget Target = MessageTarget.All;
         public string? Name;
+        public string? TargetName;  
         public DateTime Time;
         public long UnixTime;
         public int PayloadLength;
@@ -160,6 +162,14 @@ namespace Server
                 {
                     Console.WriteLine($"Error: Invalid message target '{parts[1]}' in header.");
                 }
+            }
+            else if(parts[0] == "TargetName:")
+            {
+                TargetName = parts[1];
+            }
+            else
+            {
+                Console.WriteLine($"Error: Unknown header field '{parts[0]}' in header.");
             }
         }
 

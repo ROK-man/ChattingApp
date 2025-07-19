@@ -23,6 +23,7 @@ namespace Client
 
         public void ParseLine(string line)
         {
+            //Console.WriteLine(line);
             if (m_currentMessage.ParseLine(line))
             {
                 AddMessageToReceivedQueue(m_currentMessage);

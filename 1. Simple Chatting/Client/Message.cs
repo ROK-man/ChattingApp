@@ -17,6 +17,7 @@ namespace Client
     {
         None,
         All,
+        Whisper,
     }
     internal class Message
     {
@@ -26,6 +27,7 @@ namespace Client
         public MessageType Type = MessageType.Text;
         public MessageTarget Target = MessageTarget.All;
         public string? Name;
+        public string? TargetName;
         public DateTime Time;
         public long UnixTime;
         public int PayloadLength;
@@ -38,6 +40,7 @@ namespace Client
             m_isParsingHeader = true;
             Type = MessageType.None;
             Target = MessageTarget.None;
+            TargetName = null;
             Name = null;
             Time = DateTime.MinValue;
             UnixTime = 0;
@@ -74,6 +77,10 @@ namespace Client
             if (Target != MessageTarget.None)
             {
                 sb.Append($"Target: {Target}\r\n");
+            }
+            if( TargetName != null)
+            {
+                sb.Append($"TargetName: {TargetName}\r\n");
             }
 
             sb.Append("\r\n");
@@ -155,6 +162,14 @@ namespace Client
                 {
                     Console.WriteLine($"Error: Invalid message target '{parts[1]}' in header.");
                 }
+            }
+            else if (parts[0] == "TargetName:")
+            {
+                TargetName = parts[1];
+            }
+            else
+            {
+                Console.WriteLine($"Error: Unknown header field '{parts[0]}' in header.");
             }
         }
 
