@@ -86,14 +86,11 @@ namespace Chatting_Server
 
         private void ParsePayload()
         {
-            m_message.SetPayload(m_payloadbuffer);
+            m_message!.SetPayload(m_payloadbuffer);
 
-            //MessageQueue.Enqueue(m_message);
-            Console.WriteLine(m_message.Payload);
-            //Console.WriteLine($"Header Length: {m_message.Header.Length}, Type: {m_message.Header.Type}, " +
-            //    $"Flag: {m_message.Header.Flag}, UnixTimeMilli: {m_message.Header.UnixTimeMilli}");
+            MessageQueue.Enqueue(m_message);
+
             m_state = 0;
-
             m_message = new();
         }
     }

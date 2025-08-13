@@ -1,8 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
-using System.Runtime.Serialization;
-using System.Threading;
 
 namespace Chatting_Server
 {
@@ -16,6 +14,7 @@ namespace Chatting_Server
         private int m_numConnections;
 
         private ConcurrentQueue<Message> m_messages;
+        private Task? _messageProcessingTask;
 
         public Server(IPEndPoint endPoint, int maxConnections = 100)
         {
@@ -45,7 +44,6 @@ namespace Chatting_Server
 
                 m_freeSocketArgsPool!.Push(args);
             }
-
         }
 
         public void Start()
@@ -55,6 +53,20 @@ namespace Chatting_Server
             m_listenSocket!.Listen();
 
             AcceptStart(listeningArgs);
+            _messageProcessingTask = Task.Run(ProcessMessagesAsync);
+        }
+        private async Task ProcessMessagesAsync()
+        {
+            while (true)
+            {
+                if (m_messages.TryDequeue(out var message))
+                {
+                    // Process the message (e.g., log, broadcast)
+                    Console.WriteLine($"Processed message: {message.Payload?.ToString()}\t ping: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - message.Header.UnixTimeMilli}");
+                    // Add more processing logic here (e.g., broadcast to other clients)
+                }
+                await Task.Yield(); // Prevent tight loop, yield to other tasks
+            }
         }
 
         private void AcceptStart(SocketAsyncEventArgs e)
@@ -73,14 +85,7 @@ namespace Chatting_Server
             {
                 if (m_numConnections < m_maxConnections)
                 {
-                    Socket? socket = e.AcceptSocket;
-                    Console.WriteLine($"Connected: {socket!.RemoteEndPoint}");
-                    var args = m_freeSocketArgsPool!.Pop();
-                    SocketToken? token = args.UserToken as SocketToken;
-                    token!.Socket = socket;
-
-                    m_connectedSockets!.Add(socket!);
-                    ReceiveStart(args);
+                    AcceptConnect(e);
                 }
                 else
                 {
@@ -92,6 +97,22 @@ namespace Chatting_Server
                 Console.WriteLine($"Listen error: {e.SocketError}");
             }
             AcceptStart(e);
+        }
+
+        private void AcceptConnect(SocketAsyncEventArgs e)
+        {
+            Socket? socket = e.AcceptSocket;
+            Console.WriteLine($"Connected: {socket!.RemoteEndPoint}");
+
+            var args = m_freeSocketArgsPool!.Pop();
+
+            SocketToken? token = args.UserToken as SocketToken;
+            token!.Socket = socket;
+
+            m_numConnections++;
+
+            m_connectedSockets!.Add(socket!);
+            ReceiveStart(args);
         }
 
         private void ReceiveStart(SocketAsyncEventArgs e)
