@@ -6,103 +6,95 @@ namespace Chatting_Server
     internal class SocketToken
     {
         public Socket? Socket { get; set; }
-        private byte[]? m_buffer;
-        private int m_bufferOffset;
-        private int m_bufferSize;
-        private int m_bufferCurrentDataLength;
 
-        private int m_bufferIndex; // index for start read
         private byte m_state; // 0 = header, 1 = payload
-        private byte[] m_headerbuffer;  // 14 bytes
+        private byte[] m_headerBuffer;  // 14 bytes
         private byte[] m_payloadbuffer;   // 2048 bytes
         private Message? m_message;
         public ConcurrentQueue<Message> MessageQueue { get; set; }
 
+        private int m_lengthForReceive;
+
         public SocketToken(int bufferSize, ConcurrentQueue<Message> messageQueue)
         {
             Socket = null;
-            m_buffer = new byte[bufferSize];
-            m_bufferOffset = 0;
-            m_bufferSize = bufferSize;
-            m_bufferCurrentDataLength = 0;
 
-            m_bufferIndex = 0;
             m_state = 0;
-            m_headerbuffer = new byte[14];
-            m_payloadbuffer = new byte[2048];
+            m_headerBuffer = new byte[Message.HEADER_SIZE];
+            m_payloadbuffer = new byte[Message.MAX_PAYLOAD_SIZE];
             MessageQueue = messageQueue;
+
+            m_lengthForReceive = Message.HEADER_SIZE;
+            m_message = new();
         }
 
-        public void TransferData(byte[] data, int offset, int datalength)
+        public void SetBuffer(SocketAsyncEventArgs args)
         {
-            if (data.Length + m_bufferCurrentDataLength > m_bufferSize)
+            args.SetBuffer(m_headerBuffer, 0, Message.HEADER_SIZE);
+        }
+
+        public void ProcessReceive(SocketAsyncEventArgs args, int length)
+        {
+            if(length == m_lengthForReceive)
             {
-                // wait
-            }
-            if (datalength + m_bufferOffset < m_bufferSize)
-            {
-                Buffer.BlockCopy(data, offset, m_buffer!, m_bufferOffset, datalength);
+                switch(m_state)
+                {
+                    case 0:
+                        ParseHeader();
+
+                        if (m_message!.Header.Length == 0)
+                        {
+                            Console.WriteLine("0 detected");
+                            args.SetBuffer(m_headerBuffer, 0, Message.HEADER_SIZE);
+                            m_lengthForReceive = Message.HEADER_SIZE;
+                            m_state = 0;
+                            return;
+                        }
+
+                        args.SetBuffer(m_payloadbuffer, 0, m_message!.Header.Length);
+                        m_lengthForReceive = m_message.Header.Length;
+                        break;
+                    case 1:
+                        ParsePayload();
+
+                        args.SetBuffer(m_headerBuffer, 0, Message.HEADER_SIZE);
+                        m_lengthForReceive = Message.HEADER_SIZE;
+                        break;
+                }
             }
             else
             {
-                Buffer.BlockCopy(data, offset, m_buffer!, m_bufferOffset, m_bufferSize - m_bufferOffset);
-                Buffer.BlockCopy(data, offset + m_bufferSize - m_bufferOffset, m_buffer!, 0, datalength - (m_bufferSize - m_bufferOffset));
-            }
-            m_bufferCurrentDataLength += datalength;
-            m_bufferOffset = (m_bufferOffset + datalength) % m_bufferSize;
-
-            ParseData();
-        }
-
-        private void ParseData()
-        {
-            switch(m_state)
-            {
-                case 0:
-                    ParseHeader();
-                    if(m_state == 1)
-                    {
-                        ParsePayload();
-                    }
-                    break;
-                case 1:
-                    ParsePayload();
-                    break;
+                m_lengthForReceive -= length;
+                switch(m_state)
+                {
+                    case 0:
+                        args.SetBuffer(m_headerBuffer, Message.HEADER_SIZE - m_lengthForReceive, m_lengthForReceive);
+                        break;
+                    case 1:
+                        args.SetBuffer(m_payloadbuffer, m_message!.Header.Length - m_lengthForReceive, m_lengthForReceive);
+                        break;
+                }
             }
         }
 
         private void ParseHeader()
         {
-            if(m_bufferCurrentDataLength < 14)
-            {
-                return;
-            }
+            m_message!.SetHeader(m_headerBuffer);
 
-            m_message = new();
-            Buffer.BlockCopy(m_buffer!, m_bufferIndex, m_headerbuffer, 0, 14);
-            m_message.SetHeader(m_headerbuffer);
-
-            m_bufferIndex += 14;
-            m_bufferCurrentDataLength -= 14;
-            m_state = 1;
+            m_state = 1;;
         }
 
         private void ParsePayload()
         {
-            if (m_bufferCurrentDataLength < m_message!.Header.Length)
-            {
-                return;
-            }
-            Buffer.BlockCopy(m_buffer!, m_bufferIndex, m_payloadbuffer, 0, m_message.Header.Length);
             m_message.SetPayload(m_payloadbuffer);
 
             //MessageQueue.Enqueue(m_message);
             Console.WriteLine(m_message.Payload);
-            Console.WriteLine($"Header Length: {m_message.Header.Length}, Type: {m_message.Header.Type}, Flag: {m_message.Header.Flag}, UnixTimeMilli: {m_message.Header.UnixTimeMilli}");
-
-            m_bufferIndex += m_message.Header.Length;
-            m_bufferCurrentDataLength -= m_message.Header.Length;
+            //Console.WriteLine($"Header Length: {m_message.Header.Length}, Type: {m_message.Header.Type}, " +
+            //    $"Flag: {m_message.Header.Flag}, UnixTimeMilli: {m_message.Header.UnixTimeMilli}");
             m_state = 0;
+
+            m_message = new();
         }
     }
 }

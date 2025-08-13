@@ -9,7 +9,7 @@ namespace Chatting_Client
     internal class Message
     {
         public Messageheader Header { get; set; }
-        public String Payload { get; set; } 
+        public string Payload { get; set; } 
 
         public Message()
         {
@@ -37,10 +37,7 @@ namespace Chatting_Client
 
             byte[] data = new byte[14 + Header.Length];
 
-            data[0] = (byte)(Header.Length >> 24);
-            data[1] = (byte)(Header.Length >> 16);
-            data[2] = (byte)(Header.Length >> 8);
-            data[3] = (byte)(Header.Length);
+            BitConverter.GetBytes(Header.Length).CopyTo(data, 0);
             data[4] = Header.Type;
             data[5] = Header.Flag;
             BitConverter.GetBytes(Header.UnixTimeMilli).CopyTo(data, 6);

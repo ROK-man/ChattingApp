@@ -11,7 +11,6 @@ namespace Chatting_Server
         private int m_maxConnections;
         private Socket? m_listenSocket;
         private Stack<SocketAsyncEventArgs>? m_freeSocketArgsPool;
-        private SocketBufferManager? m_socketBufferManager;
 
         private List<Socket>? m_connectedSockets;
         private int m_numConnections;
@@ -24,7 +23,6 @@ namespace Chatting_Server
             m_listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             m_listenSocket.Bind(endPoint);
 
-            m_socketBufferManager = new SocketBufferManager(maxConnections * 1024, 1024);
             m_freeSocketArgsPool = new Stack<SocketAsyncEventArgs>();
 
             m_connectedSockets = new List<Socket>();
@@ -35,17 +33,15 @@ namespace Chatting_Server
 
         public void Init()
         {
-            m_socketBufferManager!.Init();
-
             for (int i = 0; i < m_maxConnections; i++)
             {
                 SocketAsyncEventArgs args = new();
 
-                m_socketBufferManager.SetBuffer(args);
                 args.Completed += new EventHandler<SocketAsyncEventArgs>(ReceiveCompleted!);
 
                 SocketToken token = new(2048, m_messages);
                 args.UserToken = token;
+                token.SetBuffer(args);
 
                 m_freeSocketArgsPool!.Push(args);
             }
@@ -75,7 +71,6 @@ namespace Chatting_Server
         {
             if (e.SocketError == SocketError.Success)
             {
-                // process accept
                 if (m_numConnections < m_maxConnections)
                 {
                     Socket? socket = e.AcceptSocket;
@@ -113,7 +108,7 @@ namespace Chatting_Server
             if (e.SocketError == SocketError.Success && e.BytesTransferred > 0)
             {
                 SocketToken? token = e.UserToken as SocketToken;
-                token.TransferData(e.Buffer, e.Offset, e.BytesTransferred);
+                token.ProcessReceive(e, e.BytesTransferred);
 
                 ReceiveStart(e);
             }

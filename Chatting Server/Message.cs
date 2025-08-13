@@ -8,8 +8,10 @@ namespace Chatting_Server
 {
     internal class Message
     {
+        public const int HEADER_SIZE = 14;
+        public const int MAX_PAYLOAD_SIZE = 2048;
         public Messageheader Header { get; set; }
-        public String Payload { get; set; } 
+        public string Payload { get; set; } 
 
         public Message()
         {
@@ -19,7 +21,7 @@ namespace Chatting_Server
 
         public void SetHeader(byte[] headerData)
         {
-            Header.Length = (headerData[0] << 24) | (headerData[1] << 16) | (headerData[2] << 8) | headerData[3];
+            Header.Length = BitConverter.ToInt32(headerData, 0);
             Header.Type = headerData[4];
             Header.Flag = headerData[5];
             Header.UnixTimeMilli = BitConverter.ToInt64(headerData, 6);
