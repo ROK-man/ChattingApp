@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Chatting Server", "Chatting
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Website", "Website\Website.csproj", "{F49B72C5-04B6-45F8-92D3-763F86BB238B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MessageLib", "Message\MessageLib.csproj", "{73B305C2-3C3E-4878-ABA1-536A4E47EA10}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{F49B72C5-04B6-45F8-92D3-763F86BB238B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F49B72C5-04B6-45F8-92D3-763F86BB238B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F49B72C5-04B6-45F8-92D3-763F86BB238B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{73B305C2-3C3E-4878-ABA1-536A4E47EA10}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{73B305C2-3C3E-4878-ABA1-536A4E47EA10}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{73B305C2-3C3E-4878-ABA1-536A4E47EA10}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{73B305C2-3C3E-4878-ABA1-536A4E47EA10}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

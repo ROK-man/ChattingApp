@@ -22,7 +22,7 @@ namespace Chatting_Client
                     break;
                 }
 
-                int length = Message.MakeChattingMessage(input!).GetBytes(buffer, 0, 2048);
+                int length = MessageManager.MakeChattingMessage(input!).GetBytes(buffer, 0, 2048);
                 client.Send(buffer, length, SocketFlags.None);
 
             }

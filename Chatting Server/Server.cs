@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
+using MessageLib;
 
 namespace Chatting_Server
 {
@@ -55,17 +56,21 @@ namespace Chatting_Server
             AcceptStart(listeningArgs);
             _messageProcessingTask = Task.Run(ProcessMessagesAsync);
         }
+
+        public void Check()
+        {
+            Console.WriteLine($"Connected clients: {m_connectedSockets!.Count}");
+        }
+
         private async Task ProcessMessagesAsync()
         {
             while (true)
             {
                 if (m_messages.TryDequeue(out var message))
                 {
-                    // Process the message (e.g., log, broadcast)
                     Console.WriteLine($"Processed message: {message.Payload?.ToString()}\t ping: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - message.Header.UnixTimeMilli}");
-                    // Add more processing logic here (e.g., broadcast to other clients)
+
                 }
-                await Task.Yield(); // Prevent tight loop, yield to other tasks
             }
         }
 

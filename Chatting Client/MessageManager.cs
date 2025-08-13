@@ -1,39 +1,49 @@
 ﻿using System.Reflection.PortableExecutable;
 using System.Text;
 
-namespace Chatting_Server
+namespace Chatting_Client
 {
-    internal class Message
+    internal class MessageManager
     {
         public const int HEADER_SIZE = 14;
         public const int MAX_PAYLOAD_SIZE = 2048;
         public MessageHeader? Header { get; set; }
         public MessagePayload? Payload { get; set; }
 
-        public Message()
+        public MessageManager()
         {
             Header = new();
             Payload = default;
         }
 
-        public Message(MessageType type, byte flag, MessagePayload payload)
+        public MessageManager(MessageType type, byte flag, MessagePayload payload)
         {
             Payload = payload;
             Header = new(Payload.GetLength(), type, flag);
         }
 
-
-        public Message MakeChattingMessage(string payload)
+        public int GetBytes(byte[] buffer, int offset, int bufferLength)
         {
-            ChattingMessage message = new(payload);
-            PackagePayload(MessageType.Chatting, (byte)Chatting.All, message);
+            if(bufferLength < Payload!.GetLength() + HEADER_SIZE)
+            {
+                return 0;
+            }
 
-            return new Message();
+            Header!.GetBytes(buffer, offset);
+            Payload.GetBytes(buffer, offset);
+
+            return HEADER_SIZE + Payload.GetLength();
         }
 
-        private Message PackagePayload(MessageType type, byte flag, MessagePayload payload)
+        public static MessageManager MakeChattingMessage(string payload)
         {
-            return new Message(type, flag, payload);
+            ChattingMessage message = new(payload);
+            return PackagePayload(MessageType.Chatting, (byte)Chatting.All, message);
+        }
+
+        private static MessageManager PackagePayload(MessageType type, byte flag, MessagePayload payload)
+        {
+            return new MessageManager(type, flag, payload);
         }
 
         public void SetHeader(byte[] headerData)
@@ -102,6 +112,14 @@ namespace Chatting_Server
             Flag = headerData[offset + 5];
             UnixTimeMilli = BitConverter.ToInt64(headerData, offset + 6);
         }
+
+        public void GetBytes(byte[] buffer, int offset)
+        {
+            BitConverter.GetBytes(Length).CopyTo(buffer, offset);
+            buffer[4] = (byte)Type;
+            buffer[5] = (byte)Flag;
+            BitConverter.GetBytes(UnixTimeMilli).CopyTo(buffer, offset + 6);
+        }
     }
 
     internal abstract class MessagePayload
@@ -110,6 +128,8 @@ namespace Chatting_Server
         public abstract void SetPayload(byte[] payloadData, int offset, int length);
 
         public abstract int GetLength();
+
+        public abstract void GetBytes(byte[] buffer, int offset);
     }
 
     internal class ChattingMessage : MessagePayload
@@ -139,6 +159,13 @@ namespace Chatting_Server
         {
             return Encoding.UTF8.GetByteCount(Payload);
         }
+
+        public override void GetBytes(byte[] buffer, int offset)
+        {
+            byte[] payloadBytes = Encoding.UTF8.GetBytes(Payload);
+            int payloadLength = Math.Min(payloadBytes.Length, MessageManager.MAX_PAYLOAD_SIZE);
+            Array.Copy(payloadBytes, 0, buffer, offset + 14, payloadLength);
+        }
     }
 
     internal class SystemMessage : MessagePayload
@@ -161,6 +188,10 @@ namespace Chatting_Server
         public override int GetLength()
         {
             return Encoding.UTF8.GetByteCount(Payload);
+        }
+        public override void GetBytes(byte[] buffer, int offset)
+        {
+            throw new NotImplementedException();
         }
     }
 }

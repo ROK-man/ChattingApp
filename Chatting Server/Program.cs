@@ -11,9 +11,19 @@
             chattingServer.Init();
             chattingServer.Start();
 
+            string input;
             while(true)
             {
-                Console.ReadLine();
+                input = Console.ReadLine()!.ToLower();
+                if(string.IsNullOrEmpty(input))
+                {
+                    continue;
+                }
+
+                if(input.Equals("check"))
+                {
+                    chattingServer.Check();
+                }
             }
         }
     }
