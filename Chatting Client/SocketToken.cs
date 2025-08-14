@@ -41,13 +41,13 @@ namespace Chatting_Client
                 if (m_messageManager!.ParseData(args.Buffer!))
                 {
                     m_messageQueue.Add(m_messageManager.GetMessage());
+
                     m_lengthForReceive = MessageManager.HEADER_SIZE;
                     args.SetBuffer(m_headerBuffer, 0, MessageManager.HEADER_SIZE);
                 }
                 else
                 {
                     m_lengthForReceive = m_messageManager.PayloadLength;
-                    Console.WriteLine(m_messageManager.PayloadLength);
                     args.SetBuffer(m_payloadbuffer, 0, m_lengthForReceive);
                 }
             }

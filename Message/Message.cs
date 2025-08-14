@@ -1,9 +1,12 @@
-﻿namespace MessageLib
+﻿using System.Net.Sockets;
+
+namespace MessageLib
 {
     public class Message
     {
         public MessageHeader? Header { get; set; }
         public MessagePayloadBase? Payload { get; set; }
+        public SocketAsyncEventArgs? SocketArgs { get; set; }
 
         public Message()
         {

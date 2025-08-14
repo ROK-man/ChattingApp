@@ -4,6 +4,7 @@ using MessageLib;
 
 namespace Chatting_Server
 {
+    // 소켓 상태 처리
     internal class SocketToken
     {
         public Socket? Socket { get; set; }
@@ -11,12 +12,11 @@ namespace Chatting_Server
         private byte[] m_headerBuffer;  // 14 bytes
         private byte[] m_payloadbuffer;   // 2048 bytes
         private MessageManager? m_messageManager;
-
         private int m_lengthForReceive;
 
-        private BlockingCollection<Message> m_messageQueue;
+        private BlockingCollection<LappedMessage> m_messageQueue;
 
-        public SocketToken(int bufferSize, BlockingCollection<Message> messageQueue)
+        public SocketToken(int bufferSize, BlockingCollection<LappedMessage> messageQueue)
         {
             Socket = null;
 
@@ -40,7 +40,8 @@ namespace Chatting_Server
             {
                 if(m_messageManager!.ParseData(args.Buffer!))
                 {
-                    m_messageQueue.Add(m_messageManager.GetMessage());
+                    m_messageQueue.Add(new LappedMessage(this, m_messageManager.GetMessage()));
+
                     m_lengthForReceive = MessageManager.HEADER_SIZE;
                     args.SetBuffer(m_headerBuffer, 0, MessageManager.HEADER_SIZE);
                 }

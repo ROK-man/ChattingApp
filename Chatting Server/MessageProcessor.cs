@@ -1,14 +1,17 @@
 ﻿using MessageLib;
 using System.Collections.Concurrent;
+using System.Net.Sockets;
 
 namespace Chatting_Server
 {
+    internal record LappedMessage(SocketToken Token, Message Message);
+
     internal class MessageProcessor
     {
         private Server m_server;
-        private BlockingCollection<Message> m_messages;
+        private BlockingCollection<LappedMessage> m_messages;
 
-        public MessageProcessor(Server server, BlockingCollection<Message> messages)
+        public MessageProcessor(Server server, BlockingCollection<LappedMessage> messages)
         {
             m_messages = messages;
             m_server = server;
@@ -21,18 +24,19 @@ namespace Chatting_Server
 
         private void ProcessMessages()
         {
-            foreach (var message in m_messages.GetConsumingEnumerable())
+            foreach (var serverMessage in m_messages.GetConsumingEnumerable())
             {
+                Message message = serverMessage.Message;
                 switch (message.Header!.Type)
                 {
                     case MessageType.System:
-                        Console.WriteLine("System message received.");
+                        Console.WriteLine("System serverMessage received.");
                         break;
                     case MessageType.Chatting:
                         ProcessChatting(message);
                         break;
                     default:
-                        Console.WriteLine("Unknown message type.");
+                        Console.WriteLine("Unknown serverMessage type.");
                         break;
                 }
             }
@@ -45,7 +49,7 @@ namespace Chatting_Server
             {
                 case ChattingType.All:
                     Console.WriteLine($"ping: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - message.Header!.UnixTimeMilli}\t" +
-                        $"Processed message: {message.Payload?.ToString()}");
+                        $"Processed serverMessage: {message.Payload?.ToString()}");
                     m_server.SendAllChatting(message);
                     break;
 

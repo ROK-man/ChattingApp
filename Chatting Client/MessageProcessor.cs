@@ -43,7 +43,8 @@ namespace Chatting_Client
 
         private void ProcessChatting(Message message)
         {
-            switch ((ChattingType)message.Header!.Flag)
+            ChattingMessage chat = message.Payload as ChattingMessage;
+            switch ((ChattingType)chat.Type)
             {
                 case ChattingType.All:
                     Console.WriteLine($"ping: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - message.Header!.UnixTimeMilli}\t" +

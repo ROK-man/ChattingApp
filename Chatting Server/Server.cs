@@ -5,6 +5,7 @@ using MessageLib;
 
 namespace Chatting_Server
 {
+    // 접속, 수신, 송신 처리
     internal class Server
     {
         private int m_maxConnections;
@@ -14,7 +15,7 @@ namespace Chatting_Server
         private List<SocketAsyncEventArgs>? m_connectedSockets;
         private int m_numConnections;
 
-        private BlockingCollection<Message> m_messages;
+        private BlockingCollection<LappedMessage> m_messages;
         private MessageProcessor m_messageProcessor;
 
         public Server(IPEndPoint endPoint, int maxConnections = 100)
@@ -155,6 +156,7 @@ namespace Chatting_Server
             socket.Close();
             m_connectedSockets!.Remove(e);
             m_freeSocketArgsPool!.Push(e);
+            m_numConnections--;
         }
 
         public void SendAllChatting(Message message)
