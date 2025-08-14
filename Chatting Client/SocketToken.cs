@@ -1,8 +1,13 @@
-﻿using System.Collections.Concurrent;
+﻿using MessageLib;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Sockets;
-using MessageLib;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace Chatting_Server
+namespace Chatting_Client
 {
     internal class SocketToken
     {
@@ -36,15 +41,15 @@ namespace Chatting_Server
 
         public void ProcessReceive(SocketAsyncEventArgs args, int length)
         {
-            if(length == m_lengthForReceive)
+            if (length == m_lengthForReceive)
             {
-                if(m_messageManager!.ParseData(args.Buffer!))
+                if (m_messageManager!.ParseData(args.Buffer!))
                 {
                     m_messageQueue.Add(m_messageManager.GetMessage());
                     m_lengthForReceive = MessageManager.HEADER_SIZE;
                     args.SetBuffer(m_headerBuffer, 0, MessageManager.HEADER_SIZE);
                 }
-                else 
+                else
                 {
                     m_lengthForReceive = m_messageManager.PayloadLength;
                     args.SetBuffer(m_payloadbuffer, 0, m_lengthForReceive);

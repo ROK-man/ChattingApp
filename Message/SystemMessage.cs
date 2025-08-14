@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace MessageLib
 {
-    public class SystemMessage : MessagePayload
+    public class SystemMessage : MessagePayloadBase
     {
         string Payload { get; set; }
 
@@ -27,7 +27,7 @@ namespace MessageLib
         {
             return Encoding.UTF8.GetByteCount(Payload);
         }
-        public override void GetBytes(byte[] buffer, int offset)
+        public override void Serialize(byte[] buffer, int offset)
         {
             throw new NotImplementedException();
         }

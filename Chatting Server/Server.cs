@@ -11,11 +11,11 @@ namespace Chatting_Server
         private Socket? m_listenSocket;
         private Stack<SocketAsyncEventArgs>? m_freeSocketArgsPool;
 
-        private List<Socket>? m_connectedSockets;
+        private List<SocketAsyncEventArgs>? m_connectedSockets;
         private int m_numConnections;
 
-        private ConcurrentQueue<Message> m_messages;
-        private Task? _messageProcessingTask;
+        private BlockingCollection<Message> m_messages;
+        private MessageProcessor m_messageProcessor;
 
         public Server(IPEndPoint endPoint, int maxConnections = 100)
         {
@@ -25,10 +25,11 @@ namespace Chatting_Server
 
             m_freeSocketArgsPool = new Stack<SocketAsyncEventArgs>();
 
-            m_connectedSockets = new List<Socket>();
+            m_connectedSockets = new List<SocketAsyncEventArgs>();
             m_numConnections = 0;
 
             m_messages = new();
+            m_messageProcessor = new MessageProcessor(this, m_messages);
         }
 
         public void Init()
@@ -54,24 +55,13 @@ namespace Chatting_Server
             m_listenSocket!.Listen();
 
             AcceptStart(listeningArgs);
-            _messageProcessingTask = Task.Run(ProcessMessagesAsync);
+
+            m_messageProcessor.Start(); 
         }
 
         public void Check()
         {
             Console.WriteLine($"Connected clients: {m_connectedSockets!.Count}");
-        }
-
-        private async Task ProcessMessagesAsync()
-        {
-            while (true)
-            {
-                if (m_messages.TryDequeue(out var message))
-                {
-                    Console.WriteLine($"Processed message: {message.Payload?.ToString()}\t ping: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - message.Header.UnixTimeMilli}");
-
-                }
-            }
         }
 
         private void AcceptStart(SocketAsyncEventArgs e)
@@ -116,7 +106,7 @@ namespace Chatting_Server
 
             m_numConnections++;
 
-            m_connectedSockets!.Add(socket!);
+            m_connectedSockets!.Add(args!);
             ReceiveStart(args);
         }
 
@@ -140,6 +130,7 @@ namespace Chatting_Server
             }
             else
             {
+                Console.WriteLine(e.SocketError);
                 CloseSocketConnect(e);
             }
         }
@@ -157,9 +148,21 @@ namespace Chatting_Server
             }
             catch (Exception) { }
 
-            m_connectedSockets!.Remove(socket);
             socket.Close();
+            m_connectedSockets!.Remove(e);
             m_freeSocketArgsPool!.Push(e);
+        }
+
+        public void SendAllChatting(Message message)
+        {
+            byte[] buffer = new byte[message.GetByteLength()];
+            message.Serialize(buffer, 0);
+
+            foreach(SocketAsyncEventArgs args in m_connectedSockets!)
+            {
+                Socket socket = ((SocketToken)args.UserToken!).Socket!;
+                socket!.SendAsync(buffer);
+            }
         }
     }
 }

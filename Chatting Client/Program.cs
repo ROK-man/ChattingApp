@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System.Net;
+using System.Net.Sockets;
 
 namespace Chatting_Client
 {
@@ -9,25 +10,19 @@ namespace Chatting_Client
             Console.InputEncoding = System.Text.Encoding.UTF8;
             Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-            byte[] buffer = new byte[2048];
-
-            Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            client.Connect("127.0.0.1", 5000);
+            Client client = new Client();
+            client.Connect(new IPEndPoint(IPAddress.Loopback, 5000));
 
             while (true)
             {
-                string input = Console.ReadLine();
+                string input = Console.ReadLine()!;
                 if(string.IsNullOrEmpty(input))
                 {
                     break;
                 }
 
-                int length = MessageManager.MakeChattingMessage(input!).GetBytes(buffer, 0, 2048);
-                client.Send(buffer, length, SocketFlags.None);
-
+                client.SendChatting(input);
             }
-            client.Shutdown(SocketShutdown.Both);
-            client.Close();
         }
     }
 }

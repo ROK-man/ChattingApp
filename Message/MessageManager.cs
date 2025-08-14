@@ -27,6 +27,7 @@ namespace MessageLib
         {
             message = new();
         }
+
         public bool ParseData(byte[] data)
         {
             switch (state)
@@ -64,6 +65,11 @@ namespace MessageLib
         public Message GetMessage()
         {
             return new Message(message.Header!, message.Payload!);
+        }
+
+        public Message MakeMessage(MessageType type, MessagePayloadBase payload)
+        {
+            return new Message(new MessageHeader(payload.GetLength(), type, 0), payload);
         }
     }
 }

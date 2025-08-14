@@ -42,7 +42,7 @@ namespace MessageLib
             UnixTimeMilli = BitConverter.ToInt64(headerData, offset + 6);
         }
 
-        public void GetBytes(byte[] buffer, int offset)
+        public void Serialize(byte[] buffer, int offset)
         {
             BitConverter.GetBytes(Length).CopyTo(buffer, offset);
             buffer[4] = (byte)Type;
