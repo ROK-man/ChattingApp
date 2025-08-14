@@ -40,16 +40,18 @@ namespace Chatting_Server
 
         private void ProcessChatting(Message message)
         {
-            switch((ChattingType)message.Header!.Flag)
+            ChattingMessage? chat = message.Payload as ChattingMessage;
+            switch (chat!.Type)
             {
                 case ChattingType.All:
-                    Console.WriteLine($"Processed message: {message.Payload?.ToString()}\t " +
-                        $"ping: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - message.Header!.UnixTimeMilli}");
+                    Console.WriteLine($"ping: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - message.Header!.UnixTimeMilli}\t" +
+                        $"Processed message: {message.Payload?.ToString()}");
                     m_server.SendAllChatting(message);
                     break;
 
                 case ChattingType.Whisper:
-                    Console.WriteLine($"Whisper received");
+                    Console.WriteLine($"To {chat.TargetName} {chat.Payload}\t" +
+                        $"ping: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - message.Header!.UnixTimeMilli}");
                     break;
             }
         }

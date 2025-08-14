@@ -8,6 +8,7 @@ namespace MessageLib
 {
     public enum ChattingType : byte
     {
+        None = 0,
         All = 1,
         Whisper = 2,
     }
@@ -17,19 +18,38 @@ namespace MessageLib
         public ChattingType Type { get; set; }
         public string Payload { get; set; }
 
+        public string TargetName { get; set; }  // 15 bytes or 0 
+
         public ChattingMessage()
         {
+            Type = ChattingType.None;
             Payload = string.Empty;
+            TargetName = string.Empty;
         }
-        public ChattingMessage(string payload)
+        public ChattingMessage(ChattingType type, string targetName, string payload)
         {
+            Type = type;
+            TargetName = targetName;
             Payload = payload;
         }
 
-        public override void SetPayload(byte[] payloadData, int offset, int length)
+        public override void Deserialize(byte[] payloadData, int offset, int length)
         {
-            Type = (ChattingType)payloadData[0];
-            Payload = Encoding.UTF8.GetString(payloadData, offset + 1, length - 1);
+            int readLength = 0;
+            Type = (ChattingType)payloadData[offset++];
+            readLength++;
+
+            if (Type == ChattingType.Whisper)
+            {
+                TargetName = Encoding.UTF8.GetString(payloadData, offset, 15);
+                offset += 15;
+                readLength += 15;
+            }
+            else
+            {
+                TargetName = string.Empty;
+            }
+            Payload = Encoding.UTF8.GetString(payloadData, offset, length - readLength);
         }
 
         public override string ToString()
@@ -41,17 +61,25 @@ namespace MessageLib
         {
             int length = Encoding.UTF8.GetByteCount(Payload);
             length += 1; // type
+            length += TargetName.Equals(string.Empty) ? 0 : 15;
 
             return length;
         }
 
         public override void Serialize(byte[] buffer, int offset)
         {
-            buffer[offset + 1] = (byte)Type;
+            buffer[offset++] = (byte)Type;
+
+            if(!TargetName.Equals(string.Empty))
+            {
+                byte[] targetNameBytes = Encoding.UTF8.GetBytes(TargetName);
+                Array.Copy(targetNameBytes, 0, buffer, offset, Math.Min(targetNameBytes.Length, 15));
+                offset += 15;
+            }
 
             byte[] payloadBytes = Encoding.UTF8.GetBytes(Payload);
-            int payloadLength = Math.Min(payloadBytes.Length, MessageManager.MAX_PAYLOAD_SIZE);
-            Array.Copy(payloadBytes, 0, buffer, offset + 1, payloadLength);
+            Array.Copy(payloadBytes, 0, buffer, offset, payloadBytes.Length);
+            offset += payloadBytes.Length;
         }
     }
 }

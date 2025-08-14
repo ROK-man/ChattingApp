@@ -1,11 +1,6 @@
 ﻿using MessageLib;
-using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.Sockets;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Chatting_Client
 {
@@ -52,6 +47,7 @@ namespace Chatting_Client
                 else
                 {
                     m_lengthForReceive = m_messageManager.PayloadLength;
+                    Console.WriteLine(m_messageManager.PayloadLength);
                     args.SetBuffer(m_payloadbuffer, 0, m_lengthForReceive);
                 }
             }

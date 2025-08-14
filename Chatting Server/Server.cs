@@ -56,7 +56,7 @@ namespace Chatting_Server
 
             AcceptStart(listeningArgs);
 
-            m_messageProcessor.Start(); 
+            m_messageProcessor.Start();
         }
 
         public void Check()
@@ -128,6 +128,10 @@ namespace Chatting_Server
 
                 ReceiveStart(e);
             }
+            else if (e.SocketError == SocketError.ConnectionReset)
+            {
+                CloseSocketConnect(e);
+            }
             else
             {
                 Console.WriteLine(e.SocketError);
@@ -158,7 +162,7 @@ namespace Chatting_Server
             byte[] buffer = new byte[message.GetByteLength()];
             message.Serialize(buffer, 0);
 
-            foreach(SocketAsyncEventArgs args in m_connectedSockets!)
+            foreach (SocketAsyncEventArgs args in m_connectedSockets!)
             {
                 Socket socket = ((SocketToken)args.UserToken!).Socket!;
                 socket!.SendAsync(buffer);

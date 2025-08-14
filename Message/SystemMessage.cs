@@ -14,7 +14,7 @@ namespace MessageLib
         {
             Payload = string.Empty;
         }
-        public override void SetPayload(byte[] payloadData, int offset, int length)
+        public override void Deserialize(byte[] payloadData, int offset, int length)
         {
             Payload = Encoding.UTF8.GetString(payloadData, 0, length);
         }

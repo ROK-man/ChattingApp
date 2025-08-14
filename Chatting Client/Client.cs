@@ -81,10 +81,9 @@ namespace Chatting_Client
             socket.Close();
         }
 
-        public void SendChatting(string payload)
+        public void SendChatting(ChattingType type, string targetName, string payload)
         {
-            Message message = m_messageManager.MakeMessage(MessageType.Chatting, new ChattingMessage(payload));
-            message.Header!.Flag = (byte)ChattingType.All;
+            Message message = m_messageManager.MakeMessage(MessageType.Chatting, new ChattingMessage(type, targetName, payload));
 
             byte[] buffer = new byte[message.GetByteLength()];
             message.Serialize(buffer, 0);

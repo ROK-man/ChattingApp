@@ -3,7 +3,7 @@
     public abstract class MessagePayloadBase
     {
         public override abstract string ToString();
-        public abstract void SetPayload(byte[] payloadData, int offset, int length);
+        public abstract void Deserialize(byte[] payloadData, int offset, int length);
 
         public abstract int GetLength();
 

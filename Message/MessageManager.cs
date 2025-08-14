@@ -41,7 +41,7 @@ namespace MessageLib
 
                 // payload
                 case 1:
-                    message.Payload!.SetPayload(data, 0, message.Header!.Length);
+                    message.Payload!.Deserialize(data, 0, message.Header!.Length);
                     state = 0;
                     return true;
             }

@@ -46,8 +46,8 @@ namespace Chatting_Client
             switch ((ChattingType)message.Header!.Flag)
             {
                 case ChattingType.All:
-                    Console.WriteLine($"Processed message: {message.Payload?.ToString()}\t " +
-                        $"ping: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - message.Header!.UnixTimeMilli}");
+                    Console.WriteLine($"ping: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - message.Header!.UnixTimeMilli}\t" +
+                        $"Processed message: {message.Payload?.ToString()}");
                     break;
                 case ChattingType.Whisper:
                     Console.WriteLine($"Whisper received");

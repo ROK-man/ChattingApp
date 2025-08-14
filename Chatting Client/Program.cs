@@ -1,4 +1,5 @@
-﻿using System.Net;
+﻿using MessageLib;
+using System.Net;
 using System.Net.Sockets;
 
 namespace Chatting_Client
@@ -16,12 +17,19 @@ namespace Chatting_Client
             while (true)
             {
                 string input = Console.ReadLine()!;
-                if(string.IsNullOrEmpty(input))
+                if (string.IsNullOrEmpty(input))
                 {
                     break;
                 }
-
-                client.SendChatting(input);
+                if (input.StartsWith("/w"))
+                {
+                    string[] parts = input.Split(' ', 3);
+                    client.SendChatting(ChattingType.Whisper, parts[1], parts[2]);
+                }
+                else
+                {
+                    client.SendChatting(ChattingType.All, string.Empty, input);
+                }
             }
         }
     }
