@@ -12,6 +12,8 @@ namespace Chatting_Client
             Console.OutputEncoding = System.Text.Encoding.UTF8;
 
             Client client = new Client();
+
+            
             client.Connect(new IPEndPoint(IPAddress.Loopback, 5000));
 
             while (true)
