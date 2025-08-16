@@ -36,11 +36,6 @@ namespace Chatting_Client
 
         public void ProcessReceive(SocketAsyncEventArgs args, int length)
         {
-            for(int i = args.Offset; i < length + args.Offset; i++)
-            {
-                Console.WriteLine($"{args.Buffer[i]} ");
-            }
-
             if (length == m_lengthForReceive)
             {
                 if (m_messageManager!.ParseData(args.Buffer!))

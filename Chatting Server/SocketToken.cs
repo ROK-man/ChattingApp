@@ -86,10 +86,6 @@ namespace Chatting_Server
         {
             byte[] buffer = new byte[message.GetByteLength()];
             message.Serialize(buffer, 0);
-            for (int i = 0; i < buffer.Length; i++)
-            {
-                Console.WriteLine($"{buffer[i]} ");
-            }
             m_sendArgs.SetBuffer(buffer, 0, buffer.Length);
 
 

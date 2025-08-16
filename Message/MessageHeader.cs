@@ -14,6 +14,7 @@ namespace MessageLib
     }
     public class MessageHeader
     {
+
         public int Length { get; set; } // 4 bytes
         public MessageType Type { get; set; } // 1 byte
         public byte Flag { get; set; } // 1 byte

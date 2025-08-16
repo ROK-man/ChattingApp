@@ -67,7 +67,7 @@ namespace MessageLib
 
         public Message GetMessage()
         {
-            return new Message(message.Header!, message.Payload!);
+            return new Message(new MessageHeader(message.Header!.Length, message.Header!.Type, message.Header.Flag), message.Payload!);
         }
 
         public Message MakeMessage(MessageType type, MessagePayloadBase payload)

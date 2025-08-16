@@ -90,10 +90,8 @@ namespace Chatting_Server
             switch (chat!.Type)
             {
                 case ChattingType.All:
-                    Console.WriteLine($"Content length: {serverMessage.Message.Header.Length}");
                     Console.WriteLine($"ping: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - message.Header!.UnixTimeMilli}\t" +
                         $"{chat.SenderName}: {chat}");
-                    Console.WriteLine($"Content length: {serverMessage.Message.Header.Length}");
                     BroadcastMessage(message);
                     break;
 
