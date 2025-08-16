@@ -1,7 +1,11 @@
-﻿using System.Collections.Concurrent;
+﻿using MessageLib;
+using System.Collections.Concurrent;
 using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Net.Sockets;
-using MessageLib;
+using System.Text;
+using System.Text.Json;
 
 namespace Chatting_Client
 {
@@ -15,6 +19,7 @@ namespace Chatting_Client
         MessageProcessor m_messageProcessor;
 
         BlockingCollection<Message> m_messages;
+        private TaskCompletionSource<bool> m_loginTcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously); // dead lock occurred. 
 
         public Client()
         {
@@ -23,7 +28,7 @@ namespace Chatting_Client
 
             m_messages = new();
             m_messageManager = new();
-            m_messageProcessor = new(m_messages);
+            m_messageProcessor = new(m_messages, this);
 
             SocketToken token = new(2048, m_messages);
             m_receiveArgs.Completed += new EventHandler<SocketAsyncEventArgs>(ReceiveCompleted!);
@@ -32,13 +37,110 @@ namespace Chatting_Client
             token.Socket = m_socket;
         }
 
-        public void Connect(IPEndPoint endpoint)
+        public async Task LoginAsync()
+        {
+            string? userId, password;
+            do
+            {
+                Console.Write("Input your ID: ");
+                userId = Console.ReadLine();
+            } while (string.IsNullOrEmpty(userId));
+            do
+            {
+                Console.Write("Input your Password: ");
+                password = ReadPassword();
+            } while (string.IsNullOrEmpty(password));
+
+            using var httpClient = new HttpClient();
+            httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+            var loginData = new { UserID = userId, Password = password };
+            var jsonContent = JsonSerializer.Serialize(loginData);
+            var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+            try
+            {
+                Console.WriteLine("Trying web login...");
+                var loginResponse = await httpClient.PostAsync("https://localhost:7242/api/AccountAPI/login", content);
+                if (loginResponse.IsSuccessStatusCode)
+                {
+                    var result = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
+                    Console.WriteLine("Web Login Success");
+                    var parts = result!.ChatServer.Split(':');
+
+                    string ipString = parts[0];      // "127.0.0.1"
+                    int port = int.Parse(parts[1]);  // 5000
+
+                    IPAddress ip = IPAddress.Parse(ipString);
+                    Connect(new IPEndPoint(ip, port));
+
+                    await LoginChattingServerAsync(result.Token);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"오류 발생: {ex.Message}");
+            }
+        }
+
+        public string ReadPassword()
+        {
+            string password = "";
+            ConsoleKeyInfo key;
+            do
+            {
+                key = Console.ReadKey(true);
+                if (key.Key != ConsoleKey.Backspace && key.Key != ConsoleKey.Enter)
+                {
+                    password += key.KeyChar;
+                    Console.Write("*");
+                }
+                else if (key.Key == ConsoleKey.Backspace && password.Length > 0)
+                {
+                    password = password[0..^1];
+                    Console.Write("\b \b");
+                }
+            } while (key.Key != ConsoleKey.Enter);
+            Console.WriteLine();
+
+            // test
+            Console.WriteLine(password);
+            return password;
+        }
+            
+        private void Connect(IPEndPoint endpoint)
         {
             m_socket.Connect(endpoint);
 
             ReceiveStart(m_receiveArgs);
-
             m_messageProcessor.Start();
+        }
+
+        private async Task LoginChattingServerAsync(string token)
+        {
+
+            Message message = m_messageManager.MakeMessage(MessageType.Login, new LoginMessage(token));
+
+            byte[] buffer = new byte[message.GetByteLength()];
+            message.Serialize(buffer, 0);
+
+            m_socket.Send(buffer);
+
+            bool success = await m_loginTcs.Task.ConfigureAwait(false);
+
+            if (success)
+            {
+                Console.WriteLine("Login to Chatting Server Success");
+            }
+            else
+            {
+                Console.WriteLine("Login to Chatting Server Failed");
+            }
+        }
+
+        public void LoginSuccess()
+        {
+            m_loginTcs.TrySetResult(true);
         }
 
         private void ReceiveStart(SocketAsyncEventArgs e)
@@ -90,5 +192,13 @@ namespace Chatting_Client
 
             m_socket.Send(buffer);
         }
+    }
+
+    public class LoginResponse
+    {
+        public string Message { get; set; }
+        public string Code { get; set; }
+        public string Token { get; set; }
+        public string ChatServer { get; set; }
     }
 }

@@ -56,6 +56,9 @@ namespace MessageLib
                 case MessageType.System:
                     message.Payload = new SystemMessage();
                     break;
+                case MessageType.Login:
+                    message.Payload = new LoginMessage();
+                    break;
                 case MessageType.Chatting:
                     message.Payload = new ChattingMessage();
                     break;

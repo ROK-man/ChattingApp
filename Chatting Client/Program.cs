@@ -6,15 +6,14 @@ namespace Chatting_Client
 {
     internal class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             Console.InputEncoding = System.Text.Encoding.UTF8;
             Console.OutputEncoding = System.Text.Encoding.UTF8;
 
             Client client = new Client();
 
-            
-            client.Connect(new IPEndPoint(IPAddress.Loopback, 5000));
+            await client.LoginAsync();
 
             while (true)
             {
@@ -25,9 +24,9 @@ namespace Chatting_Client
                 }
 
                 // 송신은 Send 동기라 문제가 안 생기는데, 현재 서버측에선 SendAsync라 비동기로 데이터를 한 번에 마구잡이로 수신해서 데이터가 엉킴
-                if(input.Equals("test"))
+                if (input.Equals("test"))
                 {
-                    for(int i=0; i<1000; i++)
+                    for (int i = 0; i < 1000; i++)
                     {
                         client.SendChatting(ChattingType.All, string.Empty, $"Test Chat #{i}");
                     }

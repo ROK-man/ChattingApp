@@ -120,6 +120,8 @@ namespace Chatting_Server
             }
         }
 
+
+
         private void ReceiveCompleted(object sender, SocketAsyncEventArgs e)
         {
             if (e.SocketError == SocketError.Success && e.BytesTransferred > 0)
@@ -135,7 +137,7 @@ namespace Chatting_Server
             }
             else
             {
-                Console.WriteLine(e.SocketError);
+                Console.WriteLine($"Receive Error occurred. From {e.RemoteEndPoint}: {e.SocketError}");
                 CloseSocketConnect(e);
             }
         }
@@ -169,6 +171,18 @@ namespace Chatting_Server
                 Socket socket = ((SocketToken)args.UserToken!).Socket!;
                 socket!.SendAsync(buffer);
             }
+        }
+        public void SendLoginSuccess(LappedMessage serverMessage)
+        {
+            SocketToken? token = serverMessage.Token;
+            Message message = serverMessage.Message;
+            if (token == null || message.Header == null)
+                return;
+            byte[] buffer = new byte[message.GetByteLength()];
+            message.Serialize(buffer, 0);
+            Socket socket = token.Socket!;
+
+            socket!.SendAsync(buffer);
         }
     }
 }

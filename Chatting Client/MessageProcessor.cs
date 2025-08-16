@@ -11,10 +11,12 @@ namespace Chatting_Client
     internal class MessageProcessor
     {
         private BlockingCollection<Message> m_messages;
+        private Client m_client;
 
-        public MessageProcessor(BlockingCollection<Message> messages)
+        public MessageProcessor(BlockingCollection<Message> messages, Client client)
         {
             m_messages = messages;
+            m_client = client;
         }
 
         public void Start()
@@ -30,6 +32,9 @@ namespace Chatting_Client
                 {
                     case MessageType.System:
                         Console.WriteLine("System message received.");
+                        break;
+                    case MessageType.Login:
+                        m_client.LoginSuccess();
                         break;
                     case MessageType.Chatting:
                         ProcessChatting(message);

@@ -72,9 +72,8 @@ namespace Website.Controllers.API
 
             return Ok(new
             {
-                UserId = user.Id,
-                UserName = user.UserName,
-                // 필요한 추가 정보 (예: DisplayName, Role 등)
+                UserId = user.UserName,
+                Nickname = user.Nickname,
             });
         }
 

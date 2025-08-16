@@ -9,7 +9,8 @@ namespace MessageLib
     public enum MessageType : byte
     {
         System = 1,
-        Chatting = 2,
+        Login = 2,
+        Chatting = 3,
     }
     public class MessageHeader
     {
