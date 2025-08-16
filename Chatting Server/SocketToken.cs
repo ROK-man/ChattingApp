@@ -8,6 +8,7 @@ namespace Chatting_Server
     internal class SocketToken
     {
         public Socket? Socket { get; set; }
+        public UserInfo? User { get; set; }
 
         private byte[] m_headerBuffer;  // 14 bytes
         private byte[] m_payloadbuffer;   // 2048 bytes
@@ -27,6 +28,8 @@ namespace Chatting_Server
             m_messageManager = new();
 
             m_messageQueue = messageQueue;
+
+            User = new UserInfo();
         }
 
         public void SetBuffer(SocketAsyncEventArgs args)

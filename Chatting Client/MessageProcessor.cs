@@ -34,7 +34,8 @@ namespace Chatting_Client
                         Console.WriteLine("System message received.");
                         break;
                     case MessageType.Login:
-                        m_client.LoginSuccess();
+                        Console.WriteLine(message.Payload);
+                        m_client.LoginSuccess(message.Payload.ToString());
                         break;
                     case MessageType.Chatting:
                         ProcessChatting(message);
@@ -52,8 +53,7 @@ namespace Chatting_Client
             switch ((ChattingType)chat.Type)
             {
                 case ChattingType.All:
-                    Console.WriteLine($"ping: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - message.Header!.UnixTimeMilli}\t" +
-                        $"Processed message: {message.Payload?.ToString()}");
+                    Console.WriteLine($"{chat.SenderName}: {chat.Payload}");
                     break;
                 case ChattingType.Whisper:
                     Console.WriteLine($"Whisper received");

@@ -50,5 +50,10 @@ namespace MessageLib
             buffer[5] = (byte)Flag;
             BitConverter.GetBytes(UnixTimeMilli).CopyTo(buffer, offset + 6);
         }
+
+        public override string ToString()
+        {
+            return $"Length: {Length}, Type: {Type}, Flag: {Flag}, UnixTimeMilli: {UnixTimeMilli}";
+        }
     }
 }

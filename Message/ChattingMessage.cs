@@ -15,20 +15,30 @@ namespace MessageLib
 
     public class ChattingMessage : MessagePayloadBase
     {
-        public ChattingType Type { get; set; }
-        public string Payload { get; set; }
+        public ChattingType Type { get; set; }  // 1 byte
+        public string SenderName { get; set; }  // 15 bytes
+        public string Payload { get; set; }     
 
         public string TargetName { get; set; }  // 15 bytes or 0 
 
         public ChattingMessage()
         {
             Type = ChattingType.None;
+            SenderName = string.Empty;
             Payload = string.Empty;
             TargetName = string.Empty;
         }
         public ChattingMessage(ChattingType type, string targetName, string payload)
         {
             Type = type;
+            SenderName = string.Empty;
+            TargetName = targetName;
+            Payload = payload;
+        }
+        public ChattingMessage(ChattingType type, string senderName, string targetName, string payload)
+        {
+            Type = type;
+            SenderName = senderName;
             TargetName = targetName;
             Payload = payload;
         }
@@ -38,6 +48,10 @@ namespace MessageLib
             int readLength = 0;
             Type = (ChattingType)payloadData[offset++];
             readLength++;
+
+            SenderName = Encoding.UTF8.GetString(payloadData, offset, 15);
+            offset += 15;
+            readLength += 15;
 
             if (Type == ChattingType.Whisper)
             {
@@ -61,6 +75,7 @@ namespace MessageLib
         {
             int length = Encoding.UTF8.GetByteCount(Payload);
             length += 1; // type
+            length += 15; // sender name
             length += TargetName.Equals(string.Empty) ? 0 : 15;
 
             return length;
@@ -70,10 +85,14 @@ namespace MessageLib
         {
             buffer[offset++] = (byte)Type;
 
-            if(!TargetName.Equals(string.Empty))
+            byte[] senderNameBytes = Encoding.UTF8.GetBytes(SenderName.PadRight(15, '\0'));
+            Buffer.BlockCopy(senderNameBytes, 0, buffer, offset, 15); 
+            offset += 15;
+
+            if (!TargetName.Equals(string.Empty))
             {
-                byte[] targetNameBytes = Encoding.UTF8.GetBytes(TargetName);
-                Array.Copy(targetNameBytes, 0, buffer, offset, Math.Min(targetNameBytes.Length, 15));
+                byte[] targetNameBytes = Encoding.UTF8.GetBytes(TargetName.PadRight(15, '\0'));
+                Buffer.BlockCopy(targetNameBytes, 0, buffer, offset, 15); 
                 offset += 15;
             }
 

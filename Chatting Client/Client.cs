@@ -12,6 +12,7 @@ namespace Chatting_Client
     internal class Client
     {
         Socket m_socket;
+        UserInfo m_userInfo = new UserInfo();
 
         SocketAsyncEventArgs m_receiveArgs;
 
@@ -138,8 +139,9 @@ namespace Chatting_Client
             }
         }
 
-        public void LoginSuccess()
+        public void LoginSuccess(string name)
         {
+            m_userInfo.UserName = name;
             m_loginTcs.TrySetResult(true);
         }
 
@@ -185,7 +187,7 @@ namespace Chatting_Client
 
         public void SendChatting(ChattingType type, string targetName, string payload)
         {
-            Message message = m_messageManager.MakeMessage(MessageType.Chatting, new ChattingMessage(type, targetName, payload));
+            Message message = m_messageManager.MakeMessage(MessageType.Chatting, new ChattingMessage(type, m_userInfo.UserName, targetName, payload));
 
             byte[] buffer = new byte[message.GetByteLength()];
             message.Serialize(buffer, 0);

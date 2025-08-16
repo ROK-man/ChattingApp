@@ -33,8 +33,7 @@ namespace Chatting_Server
         {
             foreach (var serverMessage in m_messages.GetConsumingEnumerable())
             {
-                Message message = serverMessage.Message;
-                switch (message.Header!.Type)
+                switch (serverMessage.Message.Header!.Type)
                 {
                     case MessageType.System:
                         Console.WriteLine("System serverMessage received.");
@@ -46,7 +45,7 @@ namespace Chatting_Server
                         break;
 
                     case MessageType.Chatting:
-                        ProcessChatting(message);
+                        ProcessChatting(serverMessage);
                         break;
 
                     default:
@@ -59,28 +58,32 @@ namespace Chatting_Server
         private async Task ProcessLogin(LappedMessage serverMessage)
         {
             LoginMessage? message = serverMessage.Message.Payload as LoginMessage;
-            string? token = message!.Token;
+            string? JWT = message!.Token;
 
-            m_httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            m_httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
             var userInfoResponse = await m_httpClient.GetAsync("https://localhost:7242/api/AccountAPI/userinfo");
             if (userInfoResponse.IsSuccessStatusCode)
             {
                 var userInfo = await userInfoResponse.Content.ReadFromJsonAsync<UserInfoResponse>();
                 Console.WriteLine($"사용자 ID: {userInfo.UserId}");
                 Console.WriteLine($"사용자 이름: {userInfo.Nickname}");
+
+                serverMessage.Token.User.UserName = userInfo.Nickname;
+                m_server.SendLoginSuccess(serverMessage);
             }
             else
             {
                 var error = await userInfoResponse.Content.ReadAsStringAsync();
                 Console.WriteLine($"사용자 정보 요청 실패: {error}");
             }
-
-            m_server.SendLoginSuccess(serverMessage);
+            
         }
 
-        private void ProcessChatting(Message message)
+        private void ProcessChatting(LappedMessage serverMessage)
         {
+            Message message = serverMessage.Message;
             ChattingMessage? chat = message.Payload as ChattingMessage;
+
             switch (chat!.Type)
             {
                 case ChattingType.All:

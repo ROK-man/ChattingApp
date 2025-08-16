@@ -176,8 +176,13 @@ namespace Chatting_Server
         {
             SocketToken? token = serverMessage.Token;
             Message message = serverMessage.Message;
+            LoginMessage? loginMessage = message.Payload as LoginMessage;
+            loginMessage.Token = token.User.UserName;
+
             if (token == null || message.Header == null)
                 return;
+
+            message.SetLength();
             byte[] buffer = new byte[message.GetByteLength()];
             message.Serialize(buffer, 0);
             Socket socket = token.Socket!;

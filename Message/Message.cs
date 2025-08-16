@@ -1,4 +1,5 @@
 ﻿using System.Net.Sockets;
+using System.Text;
 
 namespace MessageLib
 {
@@ -29,6 +30,21 @@ namespace MessageLib
         {
             Header.Serialize(buffer, offset);
             Payload.Serialize(buffer, offset + MessageManager.HEADER_SIZE);
+        }
+
+        public override string ToString()
+        {
+            StringBuilder sb = new();
+            sb.AppendLine($"Header: {Header}");
+            sb.AppendLine($"Payload: {Payload}");
+            return sb.ToString();
+        }
+        public void SetLength()
+        {
+            if (Header != null && Payload != null)
+            {
+                Header.Length = Payload.GetLength();
+            }
         }
     }
 }
