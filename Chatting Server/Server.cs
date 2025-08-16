@@ -12,9 +12,6 @@ namespace Chatting_Server
         private Socket? m_listenSocket;
         private Stack<SocketAsyncEventArgs>? m_freeSocketArgsPool;
 
-        private List<SocketAsyncEventArgs>? m_connectedSockets;
-        private int m_numConnections;
-
         private BlockingCollection<LappedMessage> m_messages;
         private MessageProcessor m_messageProcessor;
 
@@ -25,9 +22,6 @@ namespace Chatting_Server
             m_listenSocket.Bind(endPoint);
 
             m_freeSocketArgsPool = new Stack<SocketAsyncEventArgs>();
-
-            m_connectedSockets = new List<SocketAsyncEventArgs>();
-            m_numConnections = 0;
 
             m_messages = new();
             m_messageProcessor = new MessageProcessor(this, m_messages);
@@ -62,7 +56,7 @@ namespace Chatting_Server
 
         public void Check()
         {
-            Console.WriteLine($"Connected clients: {m_connectedSockets!.Count}");
+            Console.WriteLine($"Connected clients: {m_maxConnections - m_freeSocketArgsPool.Count}");
         }
 
         private void AcceptStart(SocketAsyncEventArgs e)
@@ -79,7 +73,7 @@ namespace Chatting_Server
         {
             if (e.SocketError == SocketError.Success)
             {
-                if (m_numConnections < m_maxConnections)
+                if (m_freeSocketArgsPool.Count > 0)
                 {
                     AcceptConnect(e);
                 }
@@ -105,9 +99,6 @@ namespace Chatting_Server
             SocketToken? token = args.UserToken as SocketToken;
             token!.Socket = socket;
 
-            m_numConnections++;
-
-            m_connectedSockets!.Add(args!);
             ReceiveStart(args);
         }
 
@@ -119,8 +110,6 @@ namespace Chatting_Server
                 ReceiveCompleted(e, e);
             }
         }
-
-
 
         private void ReceiveCompleted(object sender, SocketAsyncEventArgs e)
         {
@@ -156,38 +145,8 @@ namespace Chatting_Server
             catch (Exception) { }
 
             socket.Close();
-            m_connectedSockets!.Remove(e);
             m_freeSocketArgsPool!.Push(e);
-            m_numConnections--;
-        }
-
-        public void SendAllChatting(Message message)
-        {
-            byte[] buffer = new byte[message.GetByteLength()];
-            message.Serialize(buffer, 0);
-
-            foreach (SocketAsyncEventArgs args in m_connectedSockets!)
-            {
-                Socket socket = ((SocketToken)args.UserToken!).Socket!;
-                socket!.SendAsync(buffer);
-            }
-        }
-        public void SendLoginSuccess(LappedMessage serverMessage)
-        {
-            SocketToken? token = serverMessage.Token;
-            Message message = serverMessage.Message;
-            LoginMessage? loginMessage = message.Payload as LoginMessage;
-            loginMessage.Token = token.User.UserName;
-
-            if (token == null || message.Header == null)
-                return;
-
-            message.SetLength();
-            byte[] buffer = new byte[message.GetByteLength()];
-            message.Serialize(buffer, 0);
-            Socket socket = token.Socket!;
-
-            socket!.SendAsync(buffer);
+            m_messageProcessor.DisconnectUser(token!);
         }
     }
 }

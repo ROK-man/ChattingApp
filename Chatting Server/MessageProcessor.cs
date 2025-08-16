@@ -1,25 +1,22 @@
 ﻿using MessageLib;
 using System.Collections.Concurrent;
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Net.Mail;
-using System.Net.Sockets;
-
 namespace Chatting_Server
 {
     internal record LappedMessage(SocketToken Token, Message Message);
 
     internal class MessageProcessor
     {
-        private Server m_server;
         private BlockingCollection<LappedMessage> m_messages;
         private HttpClient m_httpClient;
+
+        private List<SocketToken> m_connectedTokens = new List<SocketToken>();
+        private MessageManager m_messageManager = new MessageManager();
 
         public MessageProcessor(Server server, BlockingCollection<LappedMessage> messages)
         {
             m_messages = messages;
-            m_server = server;
             m_httpClient = new HttpClient();
             m_httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         }
@@ -41,7 +38,6 @@ namespace Chatting_Server
 
                     case MessageType.Login:
                         _ = ProcessLogin(serverMessage);
-                        Console.WriteLine("Login message received,");
                         break;
 
                     case MessageType.Chatting:
@@ -69,14 +65,21 @@ namespace Chatting_Server
                 Console.WriteLine($"사용자 이름: {userInfo.Nickname}");
 
                 serverMessage.Token.User.UserName = userInfo.Nickname;
-                m_server.SendLoginSuccess(serverMessage);
+                SendLoginSuccess(serverMessage);
+                m_connectedTokens.Add(serverMessage.Token);
             }
             else
             {
                 var error = await userInfoResponse.Content.ReadAsStringAsync();
                 Console.WriteLine($"사용자 정보 요청 실패: {error}");
             }
-            
+        }
+        private void SendLoginSuccess(LappedMessage serverMessage)
+        {
+            SocketToken? token = serverMessage.Token;
+
+            Message message = m_messageManager.MakeMessage(MessageType.Login, new LoginMessage(LoginType.Success, token.User.UserName));
+            token.SendMessage(message);
         }
 
         private void ProcessChatting(LappedMessage serverMessage)
@@ -87,9 +90,11 @@ namespace Chatting_Server
             switch (chat!.Type)
             {
                 case ChattingType.All:
+                    Console.WriteLine($"Content length: {serverMessage.Message.Header.Length}");
                     Console.WriteLine($"ping: {DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - message.Header!.UnixTimeMilli}\t" +
-                        $"Processed serverMessage: {message.Payload?.ToString()}");
-                    m_server.SendAllChatting(message);
+                        $"{chat.SenderName}: {chat}");
+                    Console.WriteLine($"Content length: {serverMessage.Message.Header.Length}");
+                    BroadcastMessage(message);
                     break;
 
                 case ChattingType.Whisper:
@@ -98,6 +103,27 @@ namespace Chatting_Server
                     break;
             }
         }
+
+        private void BroadcastMessage(Message message)
+        {
+            foreach (SocketToken token in m_connectedTokens)
+            {
+                if (token.Socket != null && token.Socket.Connected)
+                {
+                    token.SendMessage(message);
+                }
+            }
+        }
+
+        public void DisconnectUser(SocketToken token)
+        {
+            if (m_connectedTokens.Contains(token))
+            {
+                m_connectedTokens.Remove(token);
+                Console.WriteLine($"User {token.User?.UserName} disconnected.");
+            }
+        }
+
         public class UserInfoResponse
         {
             public string UserId { get; set; }

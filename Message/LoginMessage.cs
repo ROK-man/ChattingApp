@@ -1,15 +1,30 @@
 ﻿namespace MessageLib
 {
+    public enum LoginType : byte
+    {
+        None = 0,
+        Login = 1,
+        Success = 2,
+    }
     public class LoginMessage : MessagePayloadBase
     {
+        public LoginType Type { get; set; }
         public string Token { get; set; }
 
         public LoginMessage()
         {
+            Type = LoginType.None;
             Token = string.Empty;
         }
         public LoginMessage(string token)
         {
+            Type = LoginType.Login;
+            Token = token;
+        }
+
+        public LoginMessage(LoginType type, string token)
+        {
+            Type = type;
             Token = token;
         }
         public override void Serialize(byte[] buffer, int offset)

@@ -17,6 +17,10 @@ namespace Chatting_Server
 
         private BlockingCollection<LappedMessage> m_messageQueue;
 
+        private Queue<Message> m_sendQueue = new Queue<Message>();
+        private SocketAsyncEventArgs m_sendArgs = new SocketAsyncEventArgs();
+        bool m_isSending = false;
+
         public SocketToken(int bufferSize, BlockingCollection<LappedMessage> messageQueue)
         {
             Socket = null;
@@ -39,18 +43,19 @@ namespace Chatting_Server
 
         public void ProcessReceive(SocketAsyncEventArgs args, int length)
         {
-            if(length == m_lengthForReceive)
+            if (length == m_lengthForReceive)
             {
-                if(m_messageManager!.ParseData(args.Buffer!))
+                if (m_messageManager!.ParseData(args.Buffer!))
                 {
-                    m_messageQueue.Add(new LappedMessage(this, m_messageManager.GetMessage()));
+                    LappedMessage message = new LappedMessage(this, m_messageManager.GetMessage());
+                    m_messageQueue.Add(message);
 
                     m_lengthForReceive = MessageManager.HEADER_SIZE;
                     args.SetBuffer(m_headerBuffer, 0, MessageManager.HEADER_SIZE);
                 }
-                else 
+                else
                 {
-                    m_lengthForReceive = m_messageManager.PayloadLength;
+                    m_lengthForReceive = m_messageManager.PayloadLength;   
                     args.SetBuffer(m_payloadbuffer, 0, m_lengthForReceive);
                 }
             }
@@ -58,6 +63,61 @@ namespace Chatting_Server
             {
                 m_lengthForReceive -= length;
                 args.SetBuffer(args.Buffer, args.Offset + length, m_lengthForReceive);
+            }
+        }
+
+        public void SendMessage(Message message)
+        {
+            lock (m_sendQueue)
+            {
+                if (!m_isSending)
+                {
+                    m_isSending = true;
+                    SendStart(message);
+                }
+                else
+                {
+                    m_sendQueue.Enqueue(message);
+                }
+            }
+        }
+
+        private void SendStart(Message message)
+        {
+            byte[] buffer = new byte[message.GetByteLength()];
+            message.Serialize(buffer, 0);
+            for (int i = 0; i < buffer.Length; i++)
+            {
+                Console.WriteLine($"{buffer[i]} ");
+            }
+            m_sendArgs.SetBuffer(buffer, 0, buffer.Length);
+
+
+            if (!Socket.SendAsync(m_sendArgs))
+            {
+                SendCompleted(this, m_sendArgs);
+            }
+        }
+
+        private void SendCompleted(object? sender, SocketAsyncEventArgs e)
+        {
+            if (e.SocketError != SocketError.Success)
+            {
+                Console.WriteLine($"Send failed: {e.SocketError}");
+                return;
+            }
+
+            lock (m_sendQueue)
+            {
+                if (m_sendQueue.Count > 0)
+                {
+                    Message nextMessage = m_sendQueue.Dequeue();
+                    SendStart(nextMessage);
+                }
+                else
+                {
+                    m_isSending = false;
+                }
             }
         }
     }

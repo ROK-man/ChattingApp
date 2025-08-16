@@ -26,7 +26,7 @@ namespace Chatting_Client
                 // 송신은 Send 동기라 문제가 안 생기는데, 현재 서버측에선 SendAsync라 비동기로 데이터를 한 번에 마구잡이로 수신해서 데이터가 엉킴
                 if (input.Equals("test"))
                 {
-                    for (int i = 0; i < 1000; i++)
+                    for (int i = 0; i < 100; i++)
                     {
                         client.SendChatting(ChattingType.All, string.Empty, $"Test Chat #{i}");
                     }
@@ -40,6 +40,10 @@ namespace Chatting_Client
                 }
                 else
                 {
+                    Console.SetCursorPosition(0, Console.CursorTop - 1);
+                    Console.Write(new string(' ', Console.WindowWidth));
+                    Console.SetCursorPosition(0, Console.CursorTop);
+
                     client.SendChatting(ChattingType.All, string.Empty, input);
                 }
             }
