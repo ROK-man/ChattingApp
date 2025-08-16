@@ -18,7 +18,8 @@ namespace Website.ViewModels
         public string ConfirmPassword { get; set; }
 
         [Required(ErrorMessage = "닉네임을 입력하세요.")]
-        [MaxLength(50, ErrorMessage = "닉네임은 50자를 초과할 수 없습니다.")]
+        [MaxLength(15, ErrorMessage = "닉네임은 15자를 초과할 수 없습니다.")]
+        [RegularExpression(@"^[a-zA-Z0-9 ]+$", ErrorMessage = "영어, 숫자, 스페이스만 가능합니다.")]
         public string Nickname { get; set; }
     }
 }

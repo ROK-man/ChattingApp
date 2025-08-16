@@ -1,0 +1,24 @@
+네트워크 프로그래밍
+
+소켓 프로그래밍 
+	blocking i/o, non-blocking i/o, overlapped i/o, select, poll, epoll, iocp, rio
+수신 데이터 처리
+	링버퍼, 고정 버퍼, 복사 비용, 메시지 프로토콜, 메시지 설계, 동시성***
+
+웹서버 ASP.Net Core 
+	MVC패턴, 로그인 처리 및 데이터베이스 연동(mssql), API, JWT, WebSocket, Cookie 설정, http, SSL
+
+데이터베이스 
+	회원 정보, 실시간 회원 정보, 채팅 로그 저장 => mssql, redis, mongoDB.
+	mssql 웹 회원 정보. 아이디, 비밀번호, 닉네임 : IdentityUser
+	redis 회원 아이디 - 닉네임, 
+
+
+프로그램 구조
+	공용라이브러리(메시지)
+
+	채팅서버
+
+	클라이언트
+
+	웹서버
