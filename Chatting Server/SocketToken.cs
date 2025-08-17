@@ -88,9 +88,10 @@ namespace Chatting_Server
             message.Serialize(buffer, 0);
             m_sendArgs.SetBuffer(buffer, 0, buffer.Length);
 
-
+            // should occurr stack overflow
             if (!Socket.SendAsync(m_sendArgs))
             {
+                Console.WriteLine("Send completed synchronously.");
                 SendCompleted(this, m_sendArgs);
             }
         }
