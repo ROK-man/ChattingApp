@@ -104,8 +104,6 @@ namespace Chatting_Client
             } while (key.Key != ConsoleKey.Enter);
             Console.WriteLine();
 
-            // test
-            Console.WriteLine(password);
             return password;
         }
             

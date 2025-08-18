@@ -56,7 +56,7 @@ namespace Chatting_Client
                     Console.WriteLine($"{chat.SenderName}: {chat.Payload}");
                     break;
                 case ChattingType.Whisper:
-                    Console.WriteLine($"Whisper received");
+                    Console.WriteLine($"From {chat.SenderName}: {chat.Payload}");
                     break;
             }
         }   

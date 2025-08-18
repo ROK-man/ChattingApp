@@ -91,7 +91,6 @@ namespace Chatting_Server
             // should occurr stack overflow
             if (!Socket.SendAsync(m_sendArgs))
             {
-                Console.WriteLine("Send completed synchronously.");
                 SendCompleted(this, m_sendArgs);
             }
         }

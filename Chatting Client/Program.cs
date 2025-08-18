@@ -34,8 +34,15 @@ namespace Chatting_Client
 
                 if (input.StartsWith("/w"))
                 {
-                    string[] parts = input.Split(' ', 3);
-                    client.SendChatting(ChattingType.Whisper, parts[1], parts[2]);
+                    var match = System.Text.RegularExpressions.Regex.Match(input, @"^/w\s+(""(?<name>[^""]+)""|(?<name>\S+))\s+(?<msg>.+)$");
+
+                    if (match.Success)
+                    {
+                        string targetName = match.Groups["name"].Value;
+                        string message = match.Groups["msg"].Value;
+
+                        client.SendChatting(ChattingType.Whisper, targetName, message);
+                    }
                 }
                 else
                 {
