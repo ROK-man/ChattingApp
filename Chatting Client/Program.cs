@@ -41,6 +41,10 @@ namespace Chatting_Client
                         string targetName = match.Groups["name"].Value;
                         string message = match.Groups["msg"].Value;
 
+                        if(targetName.ToLower() == client.UserInfo.UserName.ToLower())
+                        {
+                            continue;
+                        }
                         client.SendChatting(ChattingType.Whisper, targetName, message);
                     }
                 }

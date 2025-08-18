@@ -57,7 +57,7 @@ namespace Chatting_Client
             {
                 m_client.LoginFailed();
             }
-        }   
+        }
 
         private void ProcessChatting(Message message)
         {
@@ -68,7 +68,9 @@ namespace Chatting_Client
                     Console.WriteLine($"{chat.SenderName}: {chat.Payload}");
                     break;
                 case ChattingType.Whisper:
+                    Console.ForegroundColor = ConsoleColor.Yellow;
                     Console.WriteLine($"From {chat.SenderName}: {chat.Payload}");
+                    Console.ResetColor();
                     break;
             }
         }

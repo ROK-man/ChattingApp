@@ -18,8 +18,8 @@ namespace Chatting_Server
                 conn.Open();
 
                 string query = @"SELECT user_no, id, nickname, status, last_login, banned, created_at
-                         FROM users
-                         WHERE nickname = @nickname";
+                                FROM users
+                                WHERE nickname ILIKE @nickname";
 
                 using (var cmd = new NpgsqlCommand(query, conn))
                 {
