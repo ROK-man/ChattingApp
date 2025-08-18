@@ -66,7 +66,7 @@ namespace Chatting_Client
                 if (loginResponse.IsSuccessStatusCode)
                 {
                     var result = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
-                    Console.WriteLine("Web Login Success");
+                    Console.WriteLine("Web login Success");
                     var parts = result!.ChatServer.Split(':');
 
                     string ipString = parts[0];      // "127.0.0.1"
@@ -129,11 +129,11 @@ namespace Chatting_Client
 
             if (success)
             {
-                Console.WriteLine("Login to Chatting Server Success");
+                Console.WriteLine("Server Login Success");
             }
             else
             {
-                Console.WriteLine("Login to Chatting Server Failed");
+                Console.WriteLine("Server Login Failed");
             }
         }
 
@@ -141,6 +141,11 @@ namespace Chatting_Client
         {
             m_userInfo.UserName = name;
             m_loginTcs.TrySetResult(true);
+        }
+
+        public void LoginFailed()
+        {
+            m_loginTcs.TrySetResult(false);
         }
 
         private void ReceiveStart(SocketAsyncEventArgs e)

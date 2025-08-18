@@ -3,8 +3,9 @@
     public enum LoginType : byte
     {
         None = 0,
-        Login = 1,
+        TryLogin = 1,
         Success = 2,
+        Reject = 3,
     }
     public class LoginMessage : MessagePayloadBase
     {
@@ -18,8 +19,14 @@
         }
         public LoginMessage(string token)
         {
-            Type = LoginType.Login;
+            Type = LoginType.TryLogin;
             Token = token;
+        }
+
+        public LoginMessage(LoginType type)
+        {
+            Type = type;
+            Token = string.Empty;
         }
 
         public LoginMessage(LoginType type, string token)
@@ -29,17 +36,23 @@
         }
         public override void Serialize(byte[] buffer, int offset)
         {
+            buffer[offset++] = (byte)Type;
+
             var tokenBytes = System.Text.Encoding.UTF8.GetBytes(Token);
             Buffer.BlockCopy(tokenBytes, 0, buffer, offset, tokenBytes.Length);
         }
         public override void Deserialize(byte[] payloadData, int offset, int length)
         {
-            Token = System.Text.Encoding.UTF8.GetString(payloadData, offset, length);
+            int readLength = 0;
+            Type = (LoginType)payloadData[offset++];
+            readLength++;
+
+            Token = System.Text.Encoding.UTF8.GetString(payloadData, offset, length - readLength);
         }
 
         public override int GetLength()
         {
-            return System.Text.Encoding.UTF8.GetByteCount(Token);
+            return 1 + System.Text.Encoding.UTF8.GetByteCount(Token);
         }
 
         public override string ToString()

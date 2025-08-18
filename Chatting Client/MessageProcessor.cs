@@ -34,8 +34,7 @@ namespace Chatting_Client
                         Console.WriteLine("System message received.");
                         break;
                     case MessageType.Login:
-                        Console.WriteLine(message.Payload);
-                        m_client.LoginSuccess(message.Payload.ToString());
+                        ProcessLogin(message);
                         break;
                     case MessageType.Chatting:
                         ProcessChatting(message);
@@ -46,6 +45,19 @@ namespace Chatting_Client
                 }
             }
         }
+
+        private void ProcessLogin(Message message)
+        {
+            LoginMessage login = message.Payload as LoginMessage;
+            if (login != null && login.Type == LoginType.Success)
+            {
+                m_client.LoginSuccess(login.Token);
+            }
+            else
+            {
+                m_client.LoginFailed();
+            }
+        }   
 
         private void ProcessChatting(Message message)
         {
@@ -59,6 +71,6 @@ namespace Chatting_Client
                     Console.WriteLine($"From {chat.SenderName}: {chat.Payload}");
                     break;
             }
-        }   
+        }
     }
 }

@@ -88,16 +88,16 @@ namespace Chatting_Server
             token.User = info;
             Console.WriteLine($"{info.Nickname} connected");
 
-            //if (m_connectedTokens.ContainsKey(info.Nickname.ToLower().Trim()))
-            //{
-            //    Message rejectMsg = m_messageManager.MakeMessage(
-            //        MessageType.Login,
-            //        new LoginMessage(LoginType.None, nickName)
-            //    );
-            //    token.SendMessage(rejectMsg);
-            //    Console.WriteLine($"Login rejected: {nickName} is already connected.");
-            //    return;
-            //}
+            if (m_connectedTokens.ContainsKey(info.Nickname.ToLower().Trim()))
+            {
+                Message rejectMsg = m_messageManager.MakeMessage(
+                    MessageType.Login,
+                    new LoginMessage(LoginType.Reject, nickName)
+                );
+                token.SendMessage(rejectMsg);
+                Console.WriteLine($"TryLogin rejected: {nickName} is already connected.");
+                return;
+            }
             m_connectedTokens[info.Nickname.ToLower().Trim()] = token;
 
 
