@@ -90,7 +90,6 @@ namespace Chatting_Client
 
                 if(input.StartsWith("/cp"))
                 {
-                    Console.WriteLine("Create group with password");
                     var match = Regex.Match(input, @"^/cp\s+(""(?<name>[^""]+)""|(?<name>\S+))\s+(""(?<password>[^""]+)""|(?<password>\S+))$");
                     if (match.Success)
                     {

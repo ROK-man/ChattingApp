@@ -65,18 +65,12 @@ namespace MessageLib
         }
         public override void Deserialize(byte[] payloadData, int offset, int length)
         {
-            for(int i=0; i<length; i++)
-            {
-                Console.Write($"{payloadData[offset + i]} ");
-            }
             Type = (GroupType)payloadData[offset++];
             int readLength = 1;
-            Console.WriteLine(0);
 
             if (Type == GroupType.PostMemberList || Type == GroupType.PostGroupList)
             {
                 Content = Encoding.UTF8.GetString(payloadData, offset, length - readLength);
-                Console.WriteLine(this);
                 return;
             }
 
@@ -110,7 +104,6 @@ namespace MessageLib
             {
                 GroupName = string.Empty;
             }
-            Console.WriteLine(this);
         }
 
         public override void Serialize(byte[] buffer, int offset)

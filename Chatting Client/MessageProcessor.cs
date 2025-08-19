@@ -42,11 +42,19 @@ namespace Chatting_Client
                     case MessageType.Friend:
                         ProcessFriend(message);
                         break;
+                    case MessageType.Group:
+                        ProcessGroup(message);
+                        break;
                     default:
                         Console.WriteLine("Unknown message type.");
                         break;
                 }
             }
+        }
+        private void ProcessGroup(Message message)
+        {
+            GroupMessage? m = message.Payload as GroupMessage;
+            Console.WriteLine(m.Content);
         }
 
         private void ProcessFriend(Message message)
