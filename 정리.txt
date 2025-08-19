@@ -12,7 +12,8 @@
 	웹 회원 정보	mssql		아이디, 비밀번호, 닉네임
 	채팅 회원 정보	postgresql	유저 번호(primary key), ID, NickName, 접속상태, 마지막 접속시간, 벤 상태, 채팅 계정 생성일
 	친구 정보	postgresql 	유저 번호, 대상 번호, 상태(Pending, Accept, Blocked), 친구 맺은 시간 << 양방향으로 저장해야 함
-
+	그룹 정보	postgresql 	그룹 번호, 그룹 이름, 비밀번호, 생성일
+	그룹 가입 정보	postgresql	그룹 번호, 유저 번호, 가입일
 
 프로그램 구조
 	공용라이브러리(메시지)

@@ -52,12 +52,195 @@ namespace Chatting_Server
                     case MessageType.Friend:
                         ProcessFriend(serverMessage);
                         break;
+
+                    case MessageType.Group:
+                        ProcessGroup(serverMessage);
+                        break;
+
                     default:
                         Console.WriteLine("Unknown serverMessage type.");
                         Console.WriteLine(serverMessage.Message);
                         break;
                 }
             }
+        }
+
+        private void ProcessGroup(LappedMessage serverMessage)
+        {
+            GroupMessage? message = serverMessage.Message.Payload as GroupMessage;
+            Console.WriteLine(serverMessage.Message.Payload);
+            switch (message!.Type)
+            {
+                case GroupType.Create:
+                    ProcessGroupCreate(serverMessage);
+                    break;
+                case GroupType.Join:
+                    ProcessGroupJoin(serverMessage);
+                    break;
+                case GroupType.Quit:
+                    ProcessGroupLeave(serverMessage);
+                    break;
+                case GroupType.GetGroupList:
+                    ProcessGetGroupList(serverMessage);
+                    break;
+                case GroupType.GetMemberList:
+                    ProcessGetMemberList(serverMessage);
+                    break;
+            }
+        }
+
+        private void ProcessGroupCreate(LappedMessage serverMessage)
+        {
+            GroupMessage? message = serverMessage.Message.Payload as GroupMessage;
+            GroupInfo? groupInfo = m_dataBaseController.GetGroupInfo(message!.GroupName);
+
+            if (groupInfo != null)
+            {
+                Console.WriteLine($"GroupType {message.GroupName} already exists.");
+                return;
+            }
+
+            if (message.HavePassword)
+            {
+                m_dataBaseController.InsertGroupWithPassword(message.GroupName, message.Password);
+            }
+            else
+            {
+                m_dataBaseController.InsertGroup(message.GroupName);
+            }
+
+            ProcessGroupJoin(serverMessage);
+        }
+
+        private void ProcessGroupJoin(LappedMessage serverMessage)
+        {
+            GroupMessage? message = serverMessage.Message.Payload as GroupMessage;
+            GroupInfo? groupInfo = m_dataBaseController.GetGroupInfo(message!.GroupName);
+            UserInfo? userInfo = m_dataBaseController.GetUserInfo(message.Sender);
+            if (groupInfo == null || userInfo == null)
+            {
+                Console.WriteLine($"GroupType {message.GroupName} does not exist.");
+                return;
+            }
+
+            if (message.HavePassword && groupInfo.Password != string.Empty)
+            {
+                if (message.Password.Equals(groupInfo.Password, StringComparison.OrdinalIgnoreCase) == false)
+                {
+                    Console.WriteLine($"GroupType {message.GroupName} join failed: Incorrect password.");
+                    return;
+                }
+                if (m_dataBaseController.JoinGroupWithPassword(userInfo.UserNo, groupInfo.GroupNo, message.Password))
+                {
+                    Console.WriteLine($"User {userInfo.Nickname} joined group {groupInfo.GroupName} successfully.");
+                }
+                else
+                {
+                    Console.WriteLine($"User {userInfo.Nickname} failed to join group {groupInfo.GroupName}.");
+                }
+            }
+            else
+            {
+                if (m_dataBaseController.JoinGroup(userInfo.UserNo, groupInfo.GroupNo))
+                {
+                    Console.WriteLine($"User {userInfo.Nickname} joined group {groupInfo.GroupName} successfully.");
+                }
+                else
+                {
+                    Console.WriteLine($"User {userInfo.Nickname} failed to join group {groupInfo.GroupName}.");
+                }
+            }
+        }
+
+        private void ProcessGroupLeave(LappedMessage serverMessage)
+        {
+            GroupMessage? message = serverMessage.Message.Payload as GroupMessage;
+            GroupInfo? groupInfo = m_dataBaseController.GetGroupInfo(message!.GroupName);
+            UserInfo? userInfo = m_dataBaseController.GetUserInfo(message.Sender);
+
+            if (groupInfo == null || userInfo == null)
+            {
+                Console.WriteLine($"GroupType {message.GroupName} does not exist or user {message.Sender} not found.");
+                return;
+            }
+
+            if (!m_dataBaseController.IsUserInGroup(userInfo!.UserNo, groupInfo!.GroupNo))
+            {
+                Console.WriteLine($"User {userInfo.Nickname} is not in group {groupInfo.GroupName}.");
+                return;
+            }
+
+            if (m_dataBaseController.QuitGroup(userInfo.UserNo, groupInfo.GroupNo))
+            {
+                Console.WriteLine($"User {userInfo.Nickname} left group {groupInfo.GroupName} successfully.");
+
+                if (m_dataBaseController.GetGroupMemberCount(groupInfo.GroupNo) == 0)
+                {
+                    m_dataBaseController.RemoveGroup(groupInfo.GroupNo);
+                    Console.WriteLine($"GroupType {groupInfo.GroupName} has no members left and has been removed.");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"User {userInfo.Nickname} failed to leave group {groupInfo.GroupName}.");
+            }
+        }
+
+        private void ProcessGetMemberList(LappedMessage serverMessage)
+        {
+            GroupMessage? message = serverMessage.Message.Payload as GroupMessage;
+            GroupInfo? groupInfo = m_dataBaseController.GetGroupInfo(message!.GroupName);
+            UserInfo? userInfo = m_dataBaseController.GetUserInfo(message.Sender);
+
+            if (groupInfo == null || userInfo == null)
+            {
+                Console.WriteLine($"GroupType {message.GroupName} or {userInfo!.Nickname} does not exist");
+                return;
+            }
+            if(!m_dataBaseController.IsUserInGroup(userInfo.UserNo, groupInfo.GroupNo))
+            {
+                Console.WriteLine($"User {userInfo.Nickname} is not in group {groupInfo.GroupName}." +
+                    $"근데도 멤버 조회를 하려고 해!??!!");
+                return;
+            }
+
+            List<UserInfo> memberList = m_dataBaseController.GetGroupMembers(groupInfo.GroupNo);
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine($"Members of group {groupInfo.GroupName}:");
+            foreach (var member in memberList)
+            {
+                Console.WriteLine($"\t{member.Nickname}");
+                sb.AppendLine($"\t{member.Nickname}");
+            }
+
+            GroupMessage responseMessage = new GroupMessage(GroupType.PostMemberList, message.Sender, message.GroupName, string.Empty, sb.ToString());
+            Message response = m_messageManager.MakeMessage(MessageType.Group, responseMessage);
+            serverMessage.Token.SendMessage(response);
+        }
+
+        private void ProcessGetGroupList(LappedMessage serverMessage)
+        {
+            GroupMessage? message = serverMessage.Message.Payload as GroupMessage;
+            UserInfo? userInfo = m_dataBaseController.GetUserInfo(message.Sender);
+
+            if (userInfo == null)
+            {
+                Console.WriteLine($"{userInfo.Nickname} dont valid name");
+                return;
+            }
+
+            List<GroupInfo> groupList = m_dataBaseController.GetGroupList(userInfo.UserNo);
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine($"Groups joined by {userInfo.Nickname}:");
+            foreach (var group in groupList)
+            {
+                Console.WriteLine($"\t{group.GroupName} Joined Data: {group.CreatedAt}");
+                sb.AppendLine($"\t{group.GroupName} Joined Data: {group.CreatedAt}");
+            }
+
+            GroupMessage responseMessage = new GroupMessage(GroupType.PostGroupList, userInfo.Nickname, string.Empty, string.Empty, sb.ToString());
+            Message response = m_messageManager.MakeMessage(MessageType.Group, responseMessage);
+            serverMessage.Token.SendMessage(response);
         }
 
         private void ProcessFriend(LappedMessage serverMessage)
@@ -103,7 +286,7 @@ namespace Chatting_Server
         private bool GetUserInfo(LappedMessage serverMessage, out UserInfo? sender, out UserInfo? target)
         {
             FriendMessage? message = serverMessage.Message.Payload as FriendMessage;
-            if(message.Sender == message.Target)
+            if (message.Sender == message.Target)
             {
                 sender = null;
                 target = null;
@@ -270,7 +453,7 @@ namespace Chatting_Server
             {
                 Console.WriteLine($"GetFriendList failed: user {message.Sender} not found.");
                 return;
-            }   
+            }
 
             List<UserInfo> friendList = m_dataBaseController.GetFriendList(user.UserNo);
             StringBuilder sb = new StringBuilder();

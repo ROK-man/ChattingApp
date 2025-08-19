@@ -6,13 +6,6 @@ using System.Threading.Tasks;
 
 namespace MessageLib
 {
-    public enum MessageType : byte
-    {
-        System = 1,
-        Login = 2,
-        Chatting = 3,
-        Friend = 4,
-    }
     public class MessageHeader
     {
 

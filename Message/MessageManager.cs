@@ -2,6 +2,14 @@
 
 namespace MessageLib
 {
+    public enum MessageType : byte
+    {
+        System = 1,
+        Login = 2,
+        Chatting = 3,
+        Friend = 4,
+        Group = 5,
+    }
     // Assemble Message receive and Make Message for send
     public class MessageManager
     {
@@ -64,6 +72,9 @@ namespace MessageLib
                     break;
                 case MessageType.Friend:
                     message.Payload = new FriendMessage();
+                    break;
+                case MessageType.Group:
+                    message.Payload = new GroupMessage();
                     break;
             }
         }

@@ -11,6 +11,8 @@ namespace Chatting_Server
             m_connectionString = connectionString;
         }
 
+
+        // User @@@@@@@@
         public UserInfo? GetUserInfo(string nickname)
         {
             using (var conn = new NpgsqlConnection(m_connectionString))
@@ -82,6 +84,8 @@ namespace Chatting_Server
             }
         }
 
+
+        // Friend @@@@@@@@
         public FriendInfo GetFriendInfo(long userNo, long friendNo)
         {
             using var conn = new NpgsqlConnection(m_connectionString);
@@ -110,8 +114,6 @@ namespace Chatting_Server
             }
             return null;
         }
-
-
 
         public void RequestFriend(long userNo, long friendNo)
         {
@@ -282,6 +284,243 @@ namespace Chatting_Server
                 pendingRequests.Add(user);
             }
             return pendingRequests;
+        }
+
+
+
+
+        /// GroupType @@@@@@@@
+        public GroupInfo? GetGroupInfo(string groupName)
+        {
+            using (var conn = new NpgsqlConnection(m_connectionString))
+            {
+                conn.Open();
+
+                string query = @"SELECT group_id, name, password, created_at
+                                FROM groups
+                                WHERE name ILIKE @groupName
+                                ;";
+
+                using (var cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("groupName", groupName);
+                    var reader = cmd.ExecuteReader();
+                    if (reader.Read())
+                    {
+                        return new GroupInfo
+                        {
+                            GroupNo = reader.GetInt64(reader.GetOrdinal("group_id")),
+                            GroupName = reader.GetString(reader.GetOrdinal("name")),
+                            Password = reader.IsDBNull(reader.GetOrdinal("password")) ? string.Empty : reader.GetString(reader.GetOrdinal("password")),
+                            CreatedAt = reader.GetDateTime(reader.GetOrdinal("created_at"))
+                        };
+                    }
+                }
+            }
+            return null;
+        }
+
+        public void InsertGroup(string groupName)
+        {
+            using (var conn = new NpgsqlConnection(m_connectionString))
+            {
+                conn.Open();
+                string query = @"INSERT INTO groups (name)
+                            VALUES (@groupName)
+                            ;";
+                using (var cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("groupName", groupName);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public int InsertGroupWithPassword(string groupName, string password)
+        {
+            using (var conn = new NpgsqlConnection(m_connectionString))
+            {
+                conn.Open();
+                string query = @"INSERT INTO groups (name, password)
+                            VALUES (@groupName, @password)
+                            ;";
+                using (var cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("groupName", groupName);
+                    cmd.Parameters.AddWithValue("password", password);
+                    return cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public bool JoinGroup(long userNo, long groupNo)
+        {
+            using (var conn = new NpgsqlConnection(m_connectionString))
+            {
+                conn.Open();
+                string query = @"INSERT INTO group_members (user_no, group_id)
+                         VALUES (@userNo, @groupNo)
+                         ON CONFLICT DO NOTHING;";
+                using (var cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("userNo", userNo);
+                    cmd.Parameters.AddWithValue("groupNo", groupNo);
+                    int affected = cmd.ExecuteNonQuery();
+                    return affected > 0; // 1이면 새로 삽입, 0이면 이미 존재
+                }
+            }
+        }
+
+        public bool JoinGroupWithPassword(long userNo, long groupNo, string password)
+        {
+            using (var conn = new NpgsqlConnection(m_connectionString))
+            {
+                conn.Open();
+                string query = @"INSERT INTO group_members (user_no, group_id)
+                         SELECT @userNo, @groupNo
+                         FROM groups
+                         WHERE group_id = @groupNo AND password = @password
+                         ON CONFLICT DO NOTHING;";
+                using (var cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("userNo", userNo);
+                    cmd.Parameters.AddWithValue("groupNo", groupNo);
+                    cmd.Parameters.AddWithValue("password", password);
+                    int affected = cmd.ExecuteNonQuery();
+                    return affected > 0; // 1이면 성공, 0이면 실패(중복 또는 비밀번호 불일치)
+                }
+            }
+        }
+
+
+        public bool QuitGroup(long userNo, long groupNo)
+        {
+            using (var conn = new NpgsqlConnection(m_connectionString))
+            {
+                conn.Open();
+                string query = @"DELETE FROM group_members
+                         WHERE user_no = @userNo AND group_id = @groupNo;";
+                using (var cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("userNo", userNo);
+                    cmd.Parameters.AddWithValue("groupNo", groupNo);
+                    int affected = cmd.ExecuteNonQuery();
+                    return affected > 0; // 삭제된 행이 있으면 true, 없으면 false
+                }
+            }
+        }
+
+        public void RemoveGroup(long groupNo)
+        {
+            using (var conn = new NpgsqlConnection(m_connectionString))
+            {
+                conn.Open();
+                string query = @"DELETE FROM groups
+                         WHERE group_id = @groupNo
+                         ;";
+                using (var cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("groupNo", groupNo);
+                    cmd.ExecuteNonQuery();
+                }
+            }
+        }
+
+        public int GetGroupMemberCount(long groupNo)
+        {
+            using (var conn = new NpgsqlConnection(m_connectionString))
+            {
+                conn.Open();
+                string query = @"SELECT COUNT(*)
+                             FROM group_members
+                             WHERE group_id = @groupNo
+                             ;";
+                using (var cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("groupNo", groupNo);
+                    return Convert.ToInt32(cmd.ExecuteScalar());
+                }
+            }
+        }
+
+        public List<GroupInfo> GetGroupList(long userNo)
+        {
+            var groups = new List<GroupInfo>();
+            using (var conn = new NpgsqlConnection(m_connectionString))
+            {
+                conn.Open();
+                string query = @"
+                    SELECT g.group_id, g.name, g.password, g.created_at
+                    FROM group_members gm
+                    JOIN groups g ON gm.group_id = g.group_id
+                    WHERE gm.user_no = @userNo
+                    ;";
+                using (var cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("userNo", userNo);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            groups.Add(new GroupInfo
+                            {
+                                GroupName = reader.GetString(reader.GetOrdinal("name")),
+                                CreatedAt = reader.GetDateTime(reader.GetOrdinal("created_at"))
+                            });
+                        }
+                    }
+                }
+            }
+            return groups;
+        }
+
+        public bool IsUserInGroup(long userNo, long groupNo)
+        {
+            using (var conn = new NpgsqlConnection(m_connectionString))
+            {
+                conn.Open();
+                string query = @"
+                    SELECT COUNT(*)
+                    FROM group_members
+                    WHERE user_no = @userNo AND group_id = @groupNo
+                    ;";
+                using (var cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("userNo", userNo);
+                    cmd.Parameters.AddWithValue("groupNo", groupNo);
+                    return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+                }
+            }
+        }
+
+        public List<UserInfo> GetGroupMembers(long groupNo)
+        {
+            var members = new List<UserInfo>();
+            using (var conn = new NpgsqlConnection(m_connectionString))
+            {
+                conn.Open();
+                string query = @"
+                    SELECT u.user_no, u.nickname, u.status, u.last_login
+                    FROM group_members gm
+                    JOIN users u ON gm.user_no = u.user_no
+                    WHERE gm.group_id = @groupNo
+                    ;";
+                using (var cmd = new NpgsqlCommand(query, conn))
+                {
+                    cmd.Parameters.AddWithValue("groupNo", groupNo);
+                    using (var reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            members.Add(new UserInfo
+                            {
+                                Nickname = reader.GetString(reader.GetOrdinal("nickname"))
+                            });
+                        }
+                    }
+                }
+            }
+            return members;
         }
     }
 }
