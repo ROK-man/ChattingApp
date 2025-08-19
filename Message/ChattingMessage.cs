@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Text;
 
 namespace MessageLib
 {
@@ -64,6 +60,9 @@ namespace MessageLib
                 TargetName = string.Empty;
             }
             Payload = Encoding.UTF8.GetString(payloadData, offset, length - readLength);
+            
+            SenderName = SenderName.Trim().TrimEnd('\0').ToLower();
+            TargetName = TargetName.Trim().TrimEnd('\0').ToLower();
         }
 
         public override string ToString()

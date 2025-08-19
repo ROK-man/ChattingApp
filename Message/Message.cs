@@ -36,7 +36,7 @@ namespace MessageLib
         {
             StringBuilder sb = new();
             sb.AppendLine($"Header: {Header}");
-            sb.AppendLine($"Payload: {Payload}");
+            sb.AppendLine(Payload.ToString());
             return sb.ToString();
         }
         public void SetLength()

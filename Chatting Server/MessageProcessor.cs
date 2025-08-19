@@ -15,7 +15,7 @@ namespace Chatting_Server
         private Dictionary<string, SocketToken> m_connectedTokens = new();
         private MessageManager m_messageManager = new MessageManager();
 
-        private UserInfoDB m_userInfoDB;
+        private DBController m_dataBaseController;
 
         public MessageProcessor(Server server, BlockingCollection<LappedMessage> messages)
         {
@@ -23,7 +23,7 @@ namespace Chatting_Server
             m_httpClient = new HttpClient();
             m_httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            m_userInfoDB = new UserInfoDB("Host=localhost;Port=5432;Username=postgres;Password=qwer1234;Database=chattingserver");
+            m_dataBaseController = new DBController("Host=localhost;Port=5432;Username=postgres;Password=qwer1234;Database=chattingserver");
         }
 
         public void Start()
@@ -49,11 +49,263 @@ namespace Chatting_Server
                         ProcessChatting(serverMessage);
                         break;
 
+                    case MessageType.Friend:
+                        ProcessFriend(serverMessage);
+                        break;
                     default:
                         Console.WriteLine("Unknown serverMessage type.");
+                        Console.WriteLine(serverMessage.Message);
                         break;
                 }
             }
+        }
+
+        private void ProcessFriend(LappedMessage serverMessage)
+        {
+            FriendMessage? message = serverMessage.Message.Payload as FriendMessage;
+            Console.WriteLine(serverMessage.Message.Payload);
+            switch (message!.Type)
+            {
+                case FriendMessageType.Request:
+                    ProcessFriendRequest(serverMessage);
+                    break;
+
+                case FriendMessageType.Accept:
+                    ProcessFriendAccept(serverMessage);
+                    break;
+
+                case FriendMessageType.Reject:
+                    ProcessFriendReject(serverMessage);
+                    break;
+
+                case FriendMessageType.Remove:
+                    ProcessFriendRemove(serverMessage);
+                    break;
+
+                case FriendMessageType.Block:
+                    ProcessFriendBlcok(serverMessage);
+                    break;
+
+                case FriendMessageType.Unblock:
+                    ProcessFriendUnblock(serverMessage);
+                    break;
+
+                case FriendMessageType.GetFriendList:
+                    ProcessGetFriendList(serverMessage);
+                    break;
+
+                case FriendMessageType.GetFriendRequestList:
+                    ProcessGetFriendRequestList(serverMessage);
+                    break;
+            }
+        }
+
+        private bool GetUserInfo(LappedMessage serverMessage, out UserInfo? sender, out UserInfo? target)
+        {
+            FriendMessage? message = serverMessage.Message.Payload as FriendMessage;
+            if(message.Sender == message.Target)
+            {
+                sender = null;
+                target = null;
+                Console.WriteLine($"FriendInfo request failed: Sender and Target are the same ({message.Sender}).");
+
+                return false;
+            }
+
+            sender = m_dataBaseController.GetUserInfo(message.Sender);
+            target = m_dataBaseController.GetUserInfo(message.Target);
+            if (sender == null || target == null)
+            {
+                Console.WriteLine($"FriendInfo request failed: {message.Sender} or {message.Target} not found.");
+                return false;
+            }
+
+            return true;
+        }
+
+        private void ProcessFriendRequest(LappedMessage serverMessage)
+        {
+            if (!GetUserInfo(serverMessage, out UserInfo? Sender, out UserInfo? Target))
+            {
+                return;
+            }
+
+            FriendInfo? friendInfo = m_dataBaseController.GetFriendInfo(Sender.UserNo, Target.UserNo);
+            FriendInfo? friendInfoReverse = m_dataBaseController.GetFriendInfo(Target.UserNo, Sender.UserNo);
+
+            if (friendInfoReverse != null)
+            {
+                if (friendInfoReverse.Status == FriendStatus.Pending)
+                {
+                    // 상대방이 친구 요청을 보낸 상태, 수락 처리
+                    m_dataBaseController.AcceptFriend(Sender.UserNo, Target.UserNo);
+                    m_dataBaseController.AcceptFriend(Target.UserNo, Sender.UserNo);
+                    Console.WriteLine($"FriendInfo request from {Sender.Nickname} to {Target.Nickname} accepted");
+                    return;
+                }
+                else
+                {
+                    return;
+                }
+            }
+
+            if (friendInfo != null && (friendInfo.Status == FriendStatus.Accepted || friendInfo.Status == FriendStatus.Pending))
+            {
+                // 이미 친구이거나 친구 요청을 보낸 상태
+                return;
+            }
+
+            m_dataBaseController.RequestFriend(Sender.UserNo, Target.UserNo);
+            Console.WriteLine($"FriendInfo request from {Sender.Nickname} to {Target.Nickname} processed");
+        }
+
+        private void ProcessFriendAccept(LappedMessage serverMessage)
+        {
+            if (!GetUserInfo(serverMessage, out UserInfo? Sender, out UserInfo? Target))
+            {
+                return;
+            }
+
+            // 요청자에게 친구 요청 정보가 있는지 확인
+            FriendInfo? friendInfo = m_dataBaseController.GetFriendInfo(Target.UserNo, Sender.UserNo);
+            if (friendInfo != null && friendInfo.Status == FriendStatus.Pending)
+            {
+                // 친구 요청 수락
+                m_dataBaseController.AcceptFriend(Target.UserNo, Sender.UserNo);
+                m_dataBaseController.AcceptFriend(Sender.UserNo, Target.UserNo);
+                Console.WriteLine($"FriendInfo request from {Sender.Nickname} to {Target.Nickname} accepted");
+            }
+            else
+            {
+                Console.WriteLine($"FriendInfo accept failed: {Sender.Nickname} or {Target.Nickname} not found.");
+            }
+        }
+
+        private void ProcessFriendReject(LappedMessage serverMessage)
+        {
+            if (!GetUserInfo(serverMessage, out UserInfo? Sender, out UserInfo? Target))
+            {
+                return;
+            }
+
+            FriendInfo friendInfo = m_dataBaseController.GetFriendInfo(Target.UserNo, Sender.UserNo);
+            if (friendInfo != null && friendInfo.Status == FriendStatus.Pending)
+            {
+                // 친구 요청 거절
+                m_dataBaseController.RemoveFriendInfo(Target.UserNo, Sender.UserNo);
+                Console.WriteLine($"FriendInfo request from {Target.Nickname} to {Sender.Nickname} rejected");
+            }
+            else
+            {
+                Console.WriteLine($"FriendInfo reject failed: {Target.Nickname} to {Sender.Nickname} not found.");
+            }
+        }
+        private void ProcessFriendRemove(LappedMessage serverMessage)
+        {
+            GetUserInfo(serverMessage, out UserInfo? Sender, out UserInfo? Target);
+            if (Sender == null || Target == null)
+            {
+                return;
+            }
+
+            FriendInfo? friendInfo = m_dataBaseController.GetFriendInfo(Sender.UserNo, Target.UserNo);
+            if (friendInfo != null && friendInfo.Status == FriendStatus.Accepted)
+            {
+                // 친구 관계 해제
+                m_dataBaseController.RemoveFriendInfo(Sender.UserNo, Target.UserNo);
+                m_dataBaseController.RemoveFriendInfo(Target.UserNo, Sender.UserNo);
+                Console.WriteLine($"FriendInfo between {Sender.Nickname} and {Target.Nickname} removed");
+            }
+            else
+            {
+                Console.WriteLine($"FriendInfo remove failed: {Sender.Nickname} and {Target.Nickname} not found.");
+            }
+        }
+
+        private void ProcessFriendBlcok(LappedMessage serverMessage)
+        {
+            GetUserInfo(serverMessage, out UserInfo? Sender, out UserInfo? Target);
+            if (Sender == null || Target == null)
+            {
+                return;
+            }
+
+            m_dataBaseController.BlockFriend(Sender.UserNo, Target.UserNo);
+            Console.WriteLine($"FriendInfo blocked: {Sender.Nickname} blocked {Target.Nickname}");
+
+            FriendInfo? friendInfo = m_dataBaseController.GetFriendInfo(Target.UserNo, Sender.UserNo);
+            if (friendInfo != null && friendInfo.Status == FriendStatus.Accepted)
+            {
+                m_dataBaseController.RemoveFriendInfo(Target.UserNo, Sender.UserNo);
+                Console.WriteLine($"FriendInfo removed due to block: {Target.Nickname} to {Sender.Nickname}");
+            }
+        }
+
+        private void ProcessFriendUnblock(LappedMessage serverMessage)
+        {
+            GetUserInfo(serverMessage, out UserInfo? Sender, out UserInfo? Target);
+            if (Sender == null || Target == null)
+            {
+                return;
+            }
+
+            FriendInfo? friendInfo = m_dataBaseController.GetFriendInfo(Sender.UserNo, Target.UserNo);
+            if (friendInfo != null && friendInfo.Status == FriendStatus.Blocked)
+            {
+                // 관계 삭제
+                m_dataBaseController.RemoveFriendInfo(Sender.UserNo, Target.UserNo);
+                Console.WriteLine($"FriendInfo unblocked: {Sender.Nickname} unblocked {Target.Nickname}");
+            }
+            else
+            {
+                Console.WriteLine($"FriendInfo unblock failed: {Sender.Nickname} and {Target.Nickname} not found.");
+            }
+        }
+
+        private void ProcessGetFriendList(LappedMessage serverMessage)
+        {
+            FriendMessage? message = serverMessage.Message.Payload as FriendMessage;
+            UserInfo? user = m_dataBaseController.GetUserInfo(message!.Sender);
+            if (user == null)
+            {
+                Console.WriteLine($"GetFriendList failed: user {message.Sender} not found.");
+                return;
+            }   
+
+            List<UserInfo> friendList = m_dataBaseController.GetFriendList(user.UserNo);
+            StringBuilder sb = new StringBuilder();
+            foreach (var friend in friendList)
+            {
+                Console.WriteLine($"Friend: {friend.Nickname} LastLogin: {friend.LastLogin}");
+                sb.AppendLine($"{friend.Nickname} Status: {friend.Status} LastLogin: {friend.LastLogin}");
+            }
+
+            FriendMessage responseMessage = new FriendMessage(FriendMessageType.SendFriendList, user.Nickname, string.Empty, friendList.Count, sb.ToString());
+            Message response = m_messageManager.MakeMessage(MessageType.Friend, responseMessage);
+            serverMessage.Token.SendMessage(response);
+        }
+
+        private void ProcessGetFriendRequestList(LappedMessage serverMessage)
+        {
+            FriendMessage? message = serverMessage.Message.Payload as FriendMessage;
+            UserInfo? user = m_dataBaseController.GetUserInfo(message!.Sender);
+            if (user == null)
+            {
+                Console.WriteLine($"GetFriendList failed: user {message.Sender} not found.");
+                return;
+            }
+
+            List<UserInfo> friendList = m_dataBaseController.GetFriendRequests(user.UserNo);
+            StringBuilder sb = new StringBuilder();
+            foreach (var friend in friendList)
+            {
+                Console.WriteLine($"Friend: {friend.Nickname} LastLogin: {friend.LastLogin}");
+                sb.AppendLine($"{friend.Nickname} LastLogin: {friend.LastLogin}");
+            }
+
+            FriendMessage responseMessage = new FriendMessage(FriendMessageType.SendFriendRequestList, user.Nickname, string.Empty, friendList.Count, sb.ToString());
+            Message response = m_messageManager.MakeMessage(MessageType.Friend, responseMessage);
+            serverMessage.Token.SendMessage(response);
         }
 
         private async Task ProcessLogin(LappedMessage serverMessage)
@@ -61,45 +313,65 @@ namespace Chatting_Server
             LoginMessage? message = serverMessage.Message.Payload as LoginMessage;
             string? JWT = message!.Token;
 
-            m_httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", JWT);
+            var userInfo = await GetUserInfoFromWeb(JWT);
+            if (userInfo != null)
+            {
+                if (IsAlreadyConnected(userInfo.Nickname))
+                {
+                    RejectLogin(serverMessage.Token, "Already Connected");
+                    return;
+                }
+                AcceptLogin(userInfo.UserId, userInfo.Nickname, serverMessage.Token);
+            }
+            else
+            {
+                RejectLogin(serverMessage.Token, "Wrong Login Info");
+            }
+        }
+
+        private async Task<UserInfoResponse?> GetUserInfoFromWeb(string jwt)
+        {
+            m_httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
             var userInfoResponse = await m_httpClient.GetAsync("https://localhost:7242/api/AccountAPI/userinfo");
             if (userInfoResponse.IsSuccessStatusCode)
             {
-                var userInfo = await userInfoResponse.Content.ReadFromJsonAsync<UserInfoResponse>();
-
-                AcceptLogin(userInfo.UserId, userInfo.Nickname, serverMessage.Token);
+                return await userInfoResponse.Content.ReadFromJsonAsync<UserInfoResponse>() ?? null;
             }
             else
             {
                 var error = await userInfoResponse.Content.ReadAsStringAsync();
                 Console.WriteLine($"사용자 정보 요청 실패: {error}");
+                return null;
             }
+        }
+
+        private bool IsAlreadyConnected(string nickName)
+        {
+            return m_connectedTokens.ContainsKey(nickName.ToLower().Trim());
+        }
+
+        private void RejectLogin(SocketToken token, string errorMessage)
+        {
+            Message rejectMsg = m_messageManager.MakeMessage(
+                MessageType.Login,
+                new LoginMessage(LoginType.Reject, errorMessage)
+            );
+            token.SendMessage(rejectMsg);
         }
 
         private void AcceptLogin(string id, string nickName, SocketToken token)
         {
-            UserInfo? info = m_userInfoDB.GetUserInfo(nickName);
+            UserInfo? info = m_dataBaseController.GetUserInfo(nickName);
             if (info == null)
             {
-                m_userInfoDB.InsertUserInfo(id, nickName);
+                m_dataBaseController.InsertUserInfo(id, nickName);
                 Console.WriteLine($"New user registered: {nickName}");
-                info = m_userInfoDB.GetUserInfo(nickName);
+                info = m_dataBaseController.GetUserInfo(nickName);
             }
             token.User = info;
-            Console.WriteLine($"{info.Nickname} connected");
 
-            //if (m_connectedTokens.ContainsKey(info.Nickname.ToLower().Trim()))
-            //{
-            //    Message rejectMsg = m_messageManager.MakeMessage(
-            //        MessageType.TryLogin,
-            //        new LoginMessage(LoginType.None, nickName)
-            //    );
-            //    token.SendMessage(rejectMsg);
-            //    Console.WriteLine($"TryLogin rejected: {nickName} is already connected.");
-            //    return;
-            //}
             m_connectedTokens[info.Nickname.ToLower().Trim()] = token;
-
+            Console.WriteLine($"{info.Nickname} connected");
 
             Message message = m_messageManager.MakeMessage(MessageType.Login, new LoginMessage(LoginType.Success, token.User.Nickname));
             token.SendMessage(message);
@@ -153,10 +425,15 @@ namespace Chatting_Server
 
         public void DisconnectUser(SocketToken token)
         {
-            if (token.User != null && m_connectedTokens.ContainsKey(token.User.Nickname))
+            if (token.User != null)
             {
-                m_connectedTokens.Remove(token.User.Nickname);
-                Console.WriteLine($"User {token.User?.Nickname} disconnected.");
+                string key = token.User.Nickname.ToLower().Trim();
+                if (m_connectedTokens.ContainsKey(key))
+                {
+                    m_connectedTokens.Remove(key);
+                    Console.WriteLine($"User {token.User.Nickname} disconnected.");
+                    m_dataBaseController.UpdateLastLogin(token.User.UserNo);
+                }
             }
         }
 

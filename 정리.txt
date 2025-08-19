@@ -6,12 +6,12 @@
 	링버퍼, 고정 버퍼, 복사 비용, 메시지 프로토콜, 메시지 설계, 동시성***
 
 웹서버 ASP.Net Core 
-	MVC패턴, 로그인 처리 및 데이터베이스 연동(mssql), API, JWT, WebSocket, Cookie 설정, http, SSL
+	MVC패턴, 로그인 처리 및 데이터베이스 연동(mssql), API, JWT, WebSocket, Cookie 설정, http, SSL, TLS
 
 데이터베이스 
-	웹 회원 정보 mssql	아이디, 비밀번호, 닉네임
-	채팅 회원 정보 postgresql	유저 번호(primary key), ID, NickName, 접속상태, 마지막 접속시간, 벤 상태, 채팅 계정 생성일
-	채팅 로그 mongoDB
+	웹 회원 정보	mssql		아이디, 비밀번호, 닉네임
+	채팅 회원 정보	postgresql	유저 번호(primary key), ID, NickName, 접속상태, 마지막 접속시간, 벤 상태, 채팅 계정 생성일
+	친구 정보	postgresql 	유저 번호, 대상 번호, 상태(Pending, Accept, Blocked), 친구 맺은 시간 << 양방향으로 저장해야 함
 
 
 프로그램 구조
@@ -22,3 +22,5 @@
 	클라이언트
 
 	웹서버
+
+JWT를 이용한 로그인이 정상적인가?

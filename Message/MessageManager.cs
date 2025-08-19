@@ -62,6 +62,9 @@ namespace MessageLib
                 case MessageType.Chatting:
                     message.Payload = new ChattingMessage();
                     break;
+                case MessageType.Friend:
+                    message.Payload = new FriendMessage();
+                    break;
             }
         }
 

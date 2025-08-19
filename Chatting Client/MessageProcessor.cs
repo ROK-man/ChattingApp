@@ -39,10 +39,30 @@ namespace Chatting_Client
                     case MessageType.Chatting:
                         ProcessChatting(message);
                         break;
+                    case MessageType.Friend:
+                        ProcessFriend(message);
+                        break;
                     default:
                         Console.WriteLine("Unknown message type.");
                         break;
                 }
+            }
+        }
+
+        private void ProcessFriend(Message message)
+        {
+            FriendMessage? m = message.Payload as FriendMessage;
+
+            switch(m.Type)
+            {
+                case FriendMessageType.SendFriendList:
+                    Console.WriteLine($"Friend list:");
+                    Console.WriteLine(m.Content);
+                    break;
+                case FriendMessageType.SendFriendRequestList:
+                    Console.WriteLine("Friend request list:");
+                    Console.WriteLine(m.Content);
+                    break;
             }
         }
 
@@ -53,8 +73,14 @@ namespace Chatting_Client
             {
                 m_client.LoginSuccess(login.Token);
             }
+            else if (login.Type == LoginType.Reject)
+            {
+                Console.WriteLine($"Login rejected. Error: {login.Token}");
+                m_client.LoginFailed();
+            }
             else
             {
+                Console.WriteLine($"Login rejected(else): {login.Token}");
                 m_client.LoginFailed();
             }
         }
@@ -65,11 +91,11 @@ namespace Chatting_Client
             switch ((ChattingType)chat.Type)
             {
                 case ChattingType.All:
-                    Console.WriteLine($"{chat.SenderName}: {chat.Payload}");
+                    Console.WriteLine($"[ALL] {chat.SenderName}: {chat.Payload}");
                     break;
                 case ChattingType.Whisper:
                     Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.WriteLine($"From {chat.SenderName}: {chat.Payload}");
+                    Console.WriteLine($"Whisper From {chat.SenderName}: {chat.Payload}");
                     Console.ResetColor();
                     break;
             }

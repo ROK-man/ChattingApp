@@ -38,7 +38,7 @@ namespace Chatting_Client
             token.Socket = m_socket;
         }
 
-        public async Task LoginAsync()
+        public async Task<bool> LoginAsync()
         {
             string? userId, password;
             do
@@ -75,13 +75,15 @@ namespace Chatting_Client
                     IPAddress ip = IPAddress.Parse(ipString);
                     Connect(new IPEndPoint(ip, port));
 
-                    await LoginChattingServerAsync(result.Token);
+                    return await LoginChattingServerAsync(result.Token);
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"오류 발생: {ex.Message}");
             }
+
+            return false;
         }
 
         public string ReadPassword()
@@ -115,7 +117,7 @@ namespace Chatting_Client
             m_messageProcessor.Start();
         }
 
-        private async Task LoginChattingServerAsync(string token)
+        private async Task<bool> LoginChattingServerAsync(string token)
         {
 
             Message message = m_messageManager.MakeMessage(MessageType.Login, new LoginMessage(token));
@@ -130,10 +132,12 @@ namespace Chatting_Client
             if (success)
             {
                 Console.WriteLine("Server Login Success");
+                return true;
             }
             else
             {
                 Console.WriteLine("Server Login Failed");
+                return false;
             }
         }
 
@@ -146,6 +150,8 @@ namespace Chatting_Client
 
         public void LoginFailed()
         {
+            Console.WriteLine("Server Login Failed!!!!");
+
             m_loginTcs.TrySetResult(false);
         }
 
@@ -192,6 +198,26 @@ namespace Chatting_Client
         public void SendChatting(ChattingType type, string targetName, string payload)
         {
             Message message = m_messageManager.MakeMessage(MessageType.Chatting, new ChattingMessage(type, UserInfo.UserName, targetName, payload));
+
+            byte[] buffer = new byte[message.GetByteLength()];
+            message.Serialize(buffer, 0);
+
+            m_socket.Send(buffer);
+        }
+
+        public void SendMessage(MessageType type, MessagePayloadBase payload)
+        {
+            Message message = m_messageManager.MakeMessage(type, payload);
+
+            byte[] buffer = new byte[message.GetByteLength()];
+            message.Serialize(buffer, 0);
+
+            m_socket.Send(buffer);
+        }
+
+        public void SendTest()
+        {
+            Message message = m_messageManager.MakeMessage(MessageType.Friend, new FriendMessage(FriendMessageType.Request, "jin", "kim"));
 
             byte[] buffer = new byte[message.GetByteLength()];
             message.Serialize(buffer, 0);
