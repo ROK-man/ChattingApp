@@ -7,7 +7,9 @@
             Console.InputEncoding = System.Text.Encoding.UTF8;
             Console.OutputEncoding = System.Text.Encoding.UTF8;
 
-            Server chattingServer = new(new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, 5000), 100);
+            Server chattingServer = new(new System.Net.IPEndPoint(System.Net.IPAddress.Loopback, 5000),
+                "Host=localhost;Port=5432;Username=postgres;Password=qwer1234;Database=chattingserver",
+                "mongodb://localhost:27017/");
             chattingServer.Init();
             chattingServer.Start();
 

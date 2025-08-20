@@ -1,16 +1,34 @@
-﻿using Npgsql;
+﻿using MessageLib;
+using MongoDB.Driver;
+using Npgsql;
 
 namespace Chatting_Server
 {
     internal class DBController
     {
         private readonly string m_connectionString;
+        private readonly string m_mongoDB;
+        private readonly IMongoDatabase _db;
 
-        public DBController(string connectionString)
+
+        public DBController(string connectionString, string mongoDB)
         {
             m_connectionString = connectionString;
+            m_mongoDB = mongoDB;
+            _db = new MongoClient(mongoDB).GetDatabase("chattingserver");
         }
 
+        public void InsertChattingMessage(ChattingMessage? message)
+        {
+            if(message == null || message.SenderNo == 0 || message.TargetNo == 0)
+            {
+                Console.WriteLine("SenderNo or TargetNo is not set. Cannot insert message.");
+                return;
+            }
+            message.TimeStamp = DateTime.UtcNow;
+            var collection = _db.GetCollection<ChattingMessage>("friend_messages");
+            collection.InsertOne(message);
+        }
 
         // User @@@@@@@@
         public UserInfo? GetUserInfo(string nickname)

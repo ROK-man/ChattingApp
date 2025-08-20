@@ -1,4 +1,6 @@
-﻿using System.Text;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using System.Text;
 
 namespace MessageLib
 {
@@ -7,14 +9,22 @@ namespace MessageLib
         None = 0,
         All = 1,
         Whisper = 2,
+        Friend = 3,
+        Group = 4,
     }
 
     public class ChattingMessage : MessagePayloadBase
     {
+        [BsonId]
+        public ObjectId ID { get; set; } // MongoDB ObjectId for unique identification
         public ChattingType Type { get; set; }  // 1 byte
+        public long SenderNo { get; set; } // User number of the sender
+        public long TargetNo { get; set; } // User number of the target, if applicable
+        public string Payload { get; set; }
+        public DateTime TimeStamp { get; set; } // Timestamp of the message
+        [BsonIgnore]
         public string SenderName { get; set; }  // 15 bytes
-        public string Payload { get; set; }     
-
+        [BsonIgnore]
         public string TargetName { get; set; }  // 15 bytes or 0 
 
         public ChattingMessage()
@@ -60,7 +70,7 @@ namespace MessageLib
                 TargetName = string.Empty;
             }
             Payload = Encoding.UTF8.GetString(payloadData, offset, length - readLength);
-            
+
             SenderName = SenderName.Trim().TrimEnd('\0').ToLower();
             TargetName = TargetName.Trim().TrimEnd('\0').ToLower();
         }
@@ -85,13 +95,13 @@ namespace MessageLib
             buffer[offset++] = (byte)Type;
 
             byte[] senderNameBytes = Encoding.UTF8.GetBytes(SenderName.PadRight(15, '\0'));
-            Buffer.BlockCopy(senderNameBytes, 0, buffer, offset, 15); 
+            Buffer.BlockCopy(senderNameBytes, 0, buffer, offset, 15);
             offset += 15;
 
             if (!TargetName.Equals(string.Empty))
             {
                 byte[] targetNameBytes = Encoding.UTF8.GetBytes(TargetName.PadRight(15, '\0'));
-                Buffer.BlockCopy(targetNameBytes, 0, buffer, offset, 15); 
+                Buffer.BlockCopy(targetNameBytes, 0, buffer, offset, 15);
                 offset += 15;
             }
 

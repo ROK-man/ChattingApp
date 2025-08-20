@@ -15,7 +15,7 @@ namespace Chatting_Server
         private BlockingCollection<LappedMessage> m_messages;
         private MessageProcessor m_messageProcessor;
 
-        public Server(IPEndPoint endPoint, int maxConnections = 100)
+        public Server(IPEndPoint endPoint, string postgresql, string mongoDB, int maxConnections = 100)
         {
             m_maxConnections = maxConnections;
             m_listenSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -24,7 +24,7 @@ namespace Chatting_Server
             m_freeSocketArgsPool = new Stack<SocketAsyncEventArgs>();
 
             m_messages = new();
-            m_messageProcessor = new MessageProcessor(this, m_messages);
+            m_messageProcessor = new MessageProcessor(this, m_messages, postgresql, mongoDB);
         }
 
         public void Init()

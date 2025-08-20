@@ -17,13 +17,13 @@ namespace Chatting_Server
 
         private DBController m_dataBaseController;
 
-        public MessageProcessor(Server server, BlockingCollection<LappedMessage> messages)
+        public MessageProcessor(Server server, BlockingCollection<LappedMessage> messages, string postgresql, string mongoDB)
         {
             m_messages = messages;
             m_httpClient = new HttpClient();
             m_httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-            m_dataBaseController = new DBController("Host=localhost;Port=5432;Username=postgres;Password=qwer1234;Database=chattingserver");
+            m_dataBaseController = new DBController(postgresql, mongoDB);
         }
 
         public void Start()
@@ -197,7 +197,7 @@ namespace Chatting_Server
                 Console.WriteLine($"GroupType {message.GroupName} or {userInfo!.Nickname} does not exist");
                 return;
             }
-            if(!m_dataBaseController.IsUserInGroup(userInfo.UserNo, groupInfo.GroupNo))
+            if (!m_dataBaseController.IsUserInGroup(userInfo.UserNo, groupInfo.GroupNo))
             {
                 Console.WriteLine($"User {userInfo.Nickname} is not in group {groupInfo.GroupName}." +
                     $"근데도 멤버 조회를 하려고 해!??!!");
@@ -581,6 +581,12 @@ namespace Chatting_Server
 
         private void BroadcastMessage(Message message)
         {
+            ChattingMessage? m = message.Payload as ChattingMessage;
+            UserInfo info = m_dataBaseController.GetUserInfo(m.SenderName);
+            m.SenderNo = info.UserNo;
+            m.TargetNo = -1; 
+            m_dataBaseController.InsertChattingMessage(m);
+
             foreach (var kv in m_connectedTokens)
             {
                 SocketToken token = kv.Value;
@@ -593,6 +599,12 @@ namespace Chatting_Server
 
         private void SendWhisper(string targetNickname, Message message)
         {
+            ChattingMessage? m = message.Payload as ChattingMessage;
+            UserInfo info = m_dataBaseController.GetUserInfo(m.SenderName);
+            m.SenderNo = info.UserNo;
+            m.TargetNo = m_dataBaseController.GetUserInfo(targetNickname).UserNo;
+            m_dataBaseController.InsertChattingMessage(m);
+
             if (m_connectedTokens.TryGetValue(targetNickname.Trim().TrimEnd('\0').ToLower(), out var targetToken))
             {
                 if (targetToken.Socket != null && targetToken.Socket.Connected)
