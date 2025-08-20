@@ -59,10 +59,11 @@ namespace Chatting_Client
             var jsonContent = JsonSerializer.Serialize(loginData);
             var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
+            string ipa = "40.82.129.217";
             try
             {
                 Console.WriteLine("Trying web login...");
-                var loginResponse = await httpClient.PostAsync("https://localhost:7242/api/AccountAPI/login", content);
+                var loginResponse = await httpClient.PostAsync($"http://{ipa}:7242/api/AccountAPI/login", content);
                 if (loginResponse.IsSuccessStatusCode)
                 {
                     var result = await loginResponse.Content.ReadFromJsonAsync<LoginResponse>();
@@ -72,7 +73,9 @@ namespace Chatting_Client
                     string ipString = parts[0];      // "127.0.0.1"
                     int port = int.Parse(parts[1]);  // 5000
 
+                    ipString = ipa;
                     IPAddress ip = IPAddress.Parse(ipString);
+                    Console.WriteLine($"{ip}, {port}");
                     Connect(new IPEndPoint(ip, port));
 
                     return await LoginChattingServerAsync(result.Token);
