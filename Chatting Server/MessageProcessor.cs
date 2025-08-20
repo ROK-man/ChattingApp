@@ -515,7 +515,9 @@ namespace Chatting_Server
         private async Task<UserInfoResponse?> GetUserInfoFromWeb(string jwt)
         {
             m_httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", jwt);
-            var userInfoResponse = await m_httpClient.GetAsync("https://localhost:7242/api/AccountAPI/userinfo");
+	    Console.WriteLine(1);
+            var userInfoResponse = await m_httpClient.GetAsync("http://localhost:7242/api/AccountAPI/userinfo");
+	    Console.WriteLine(2);
             if (userInfoResponse.IsSuccessStatusCode)
             {
                 return await userInfoResponse.Content.ReadFromJsonAsync<UserInfoResponse>() ?? null;
