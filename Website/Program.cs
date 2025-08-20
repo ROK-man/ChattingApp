@@ -14,7 +14,7 @@ namespace Website
             var builder = WebApplication.CreateBuilder(args);
 
             builder.Services.AddDbContext<ApplicationDBContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+                options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
@@ -52,12 +52,6 @@ namespace Website
 
             var app = builder.Build();
 
-            using (var scope = app.Services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDBContext>();
-                await DeleteDuplicateNicknameUsers(dbContext);
-            }
-
             // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
@@ -82,24 +76,5 @@ namespace Website
 
             app.Run();
         }
-        public static async Task DeleteDuplicateNicknameUsers(ApplicationDBContext dbContext)
-        {
-            await dbContext.Database.ExecuteSqlRawAsync(@"
-                DELETE FROM AspNetUserRoles
-                WHERE UserId IN (
-                    SELECT Id FROM (
-                        SELECT Id, ROW_NUMBER() OVER (PARTITION BY Nickname ORDER BY Id) AS RowNum
-                        FROM AspNetUsers
-                    ) AS SubQuery WHERE RowNum > 1
-                )");
-
-            await dbContext.Database.ExecuteSqlRawAsync(@"
-                WITH DuplicateCTE AS (
-                    SELECT Nickname, Id, ROW_NUMBER() OVER (PARTITION BY Nickname ORDER BY Id) AS RowNum
-                    FROM AspNetUsers
-                )
-                DELETE FROM DuplicateCTE WHERE RowNum > 1");
-        }
     }
-
 }
