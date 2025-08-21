@@ -1,20 +1,20 @@
 네트워크 프로그래밍
 
 소켓 프로그래밍 
-	blocking i/o, non-blocking i/o, overlapped i/o, select, poll, epoll, iocp, rio
-수신 데이터 처리
-	링버퍼, 고정 버퍼, 복사 비용, 메시지 프로토콜, 메시지 설계, 동시성***
+	blocking i/o, non-blocking i/o, overlapped i/o, select, poll, epoll, iocp, rio, OS-kernel***, zero copy?
+데이터 처리
+	링버퍼, 고정 버퍼, 복사 비용, 메시지 프로토콜, 메시지 설계, 프로토콜, 동시성***, 암호화*
 
 웹서버 ASP.Net Core 
 	MVC패턴, 로그인 처리 및 데이터베이스 연동(mssql), API, JWT, WebSocket, Cookie 설정, http, SSL, TLS
 
 데이터베이스 
-	웹 회원 정보	mssql		아이디, 비밀번호, 닉네임
+	웹 회원 정보	postgresql	아이디, 비밀번호, 닉네임(ASP - IdentityDbContext)
 	채팅 회원 정보	postgresql	유저 번호(primary key), ID, NickName, 접속상태, 마지막 접속시간, 벤 상태, 채팅 계정 생성일
-	친구 정보	postgresql 	유저 번호, 대상 번호, 상태(Pending, Accept, Blocked), 친구 맺은 시간 << 양방향으로 저장해야 함
+	친구 정보	postgresql 	유저 번호, 대상 번호, 상태(Pending, Accept, Blocked), 친구 맺은 시간
 	그룹 정보	postgresql 	그룹 번호, 그룹 이름, 비밀번호, 생성일
 	그룹 가입 정보	postgresql	그룹 번호, 유저 번호, 가입일
-	채팅로그		MongoDB		
+	채팅로그		MongoDB		채팅id, 채팅유형, 송신자, 수신대상, 내용
 
 프로그램 구조
 	공용라이브러리(메시지)
